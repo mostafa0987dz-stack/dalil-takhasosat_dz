@@ -1,49 +1,51 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 
-export default function AnimatedNumber({ value, duration = 2500 }: { value: number; duration?: number }) {
+export default function AnimatedNumber({ value, duration = 2000 }: { value: number; duration?: number }) {
   const [count, setCount] = useState(0);
   const [hasAnimated, setHasAnimated] = useState(false);
   const elementRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    // نستخدم IntersectionObserver لمراقبة متى يظهر العنصر في الشاشة
     const observer = new IntersectionObserver(
       (entries) => {
-        // إذا ظهر العنصر في الشاشة ولم يكن قد تحرك من قبل
         if (entries[0].isIntersecting && !hasAnimated) {
           setHasAnimated(true);
           
-          let startTime: number | null = null;
-          let animationFrame: number;
+          const startTime = Date.now();
+          const endTime = startTime + duration;
 
-          const animate = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            const progress = timestamp - startTime;
-            
-            // دالة لجعل الحركة تتباطأ في النهاية (Ease-out)
-            const easeOut = 1 - Math.pow(1 - progress / duration, 4);
-            const current = Math.floor(easeOut * value);
+          const animate = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1); // نسبة التقدم من 0 إلى 1
 
-            if (current < value) {
-              setCount(current);
-              animationFrame = requestAnimationFrame(animate);
+            // حساب القيمة الحالية باستخدام دالة تباطؤ آمنة
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            let current = Math.floor(easeOut * value);
+
+            // حماية إضافية لمنع الأرقام السالبة أو التي تتجاوز القيمة النهائية
+            if (current < 0) current = 0;
+            if (current > value) current = value;
+
+            setCount(current);
+
+            if (now < endTime) {
+              requestAnimationFrame(animate);
             } else {
               setCount(value); // تأكيد الوصول للرقم النهائي
             }
           };
 
-          animationFrame = requestAnimationFrame(animate);
+          requestAnimationFrame(animate);
         }
       },
-      { threshold: 0.1 } // يبدأ عندما يظهر 10% من العنصر في الشاشة
+      { threshold: 0.1 }
     );
 
     if (elementRef.current) {
       observer.observe(elementRef.current);
     }
 
-    // تنظيف الذاكرة عند إغلاق المكون
     return () => observer.disconnect();
   }, [value, duration, hasAnimated]);
 
