@@ -100,8 +100,13 @@ export default async function Home() {
       <section className="container-page pb-4">
         <div className="grid grid-cols-2 gap-4 rounded-3xl bg-slate-900 p-8 text-white md:grid-cols-4">
           {stats.map((x) => (
-            <div key={x.l}><div className="text-3xl font-black">{x.n}</div><div className="mt-2 text-sm text-slate-300">{x.l}</div></div>
-          ))}
+  <div key={x.l}>
+    <div className="text-3xl font-black">
+      <AnimatedNumber value={x.n} />
+    </div>
+    <div className="mt-2 text-sm text-slate-300">{x.l}</div>
+  </div>
+))}
         </div>
         {hasDemo(data) && <p className="mt-3 text-center text-sm text-slate-500">العتبات المعروضة تجريبية وليست رسمية.</p>}
       </section>
