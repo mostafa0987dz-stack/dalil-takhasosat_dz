@@ -33,7 +33,7 @@ export default function Header() {
     `text-sm font-semibold transition hover:text-brand-700 dark:hover:text-blue-400 ${active(url) ? "text-brand-700 dark:text-blue-400" : "text-slate-600 dark:text-slate-300"}`;
 
   return (
-    <header className="no-print sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+    <header className="no-print sticky top-0 z-50 border-b border-slate-200/50 bg-white/70 backdrop-blur-xl dark:border-slate-800/50 dark:bg-slate-950/70">
       <div className="container-page flex h-16 items-center justify-between">
         <Link href="/" className="text-lg font-black text-brand-700 dark:text-blue-400">
           دليل التخصصات <span className="text-slate-500">الجزائرية</span>
