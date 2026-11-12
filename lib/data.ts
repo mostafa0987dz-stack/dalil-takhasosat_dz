@@ -6,13 +6,10 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 export const hasSupabase = Boolean(url && anon);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(r: any): Specialty {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { thresholds, published, updated_at, ...rest } = r;
   return {
     ...rest,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     seuils: (thresholds ?? []).map((t: any) => ({
       serie: t.serie,
       annee: t.annee,
