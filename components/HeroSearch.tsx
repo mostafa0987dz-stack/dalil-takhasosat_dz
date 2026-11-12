@@ -12,11 +12,11 @@ export default function HeroSearch({ items }: { items: Item[] }) {
   const hits = n ? items.filter((x) => norm(`${x.nom_ar} ${x.nom_fr}`).includes(n)).slice(0, 5) : [];
 
   return (
-    // الحاوية الرئيسية: z-40 لتبقى تحت الهيدر (z-50)
     <div className="relative max-w-xl z-40">
+      {/* الحاوية: خلفية بيضاء دائمة، ظل خفيف، وحواف مستديرة */}
       <form 
         action="/specialties" 
-        className="flex items-center gap-2 rounded-2xl bg-white p-2 shadow-xl shadow-blue-900/10 ring-1 ring-black/5 dark:bg-slate-900 dark:ring-slate-800"
+        className="flex items-center gap-2 rounded-2xl bg-white p-2 shadow-xl shadow-blue-900/20"
       >
         <Search className="ml-2 text-slate-400" size={20} />
         
@@ -27,10 +27,10 @@ export default function HeroSearch({ items }: { items: Item[] }) {
           autoComplete="off"
           aria-label="ابحث عن تخصص"
           placeholder="ابحث عن تخصص..."
-          className="min-w-0 flex-1 bg-transparent py-2 text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
+          className="min-w-0 flex-1 bg-transparent py-2 text-slate-900 outline-none placeholder:text-slate-400"
         />
         
-        {/* زر المسح السريع (يظهر فقط عند الكتابة) */}
+        {/* زر المسح السريع */}
         {q && (
           <button 
             type="button" 
@@ -42,7 +42,8 @@ export default function HeroSearch({ items }: { items: Item[] }) {
           </button>
         )}
 
-        <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 font-bold text-white transition-all hover:bg-blue-700 active:scale-95">
+        {/* زر البحث: أزرق فاقع ونص أبيض */}
+        <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 font-bold text-white transition-all hover:bg-blue-700 active:scale-95">
           <span className="hidden sm:inline">بحث</span>
         </button>
       </form>
