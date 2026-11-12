@@ -6,6 +6,7 @@ import { SERIES } from "@/lib/constants";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import HeroSearch from "@/components/HeroSearch";
 import DomainIcon from "@/components/DomainIcon";
+import AnimatedNumber from "@/components/AnimatedNumber";
 
 export const revalidate = 600;
 
