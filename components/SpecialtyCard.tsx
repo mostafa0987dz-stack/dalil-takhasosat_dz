@@ -14,7 +14,7 @@ export default function SpecialtyCard({ item }: { item: Specialty }) {
         className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/50 dark:hover:shadow-blue-900/20"
       >
         <div>
-          {/* الشارة (Tag) أصبحت أكثر وضوحاً */}
+          {/* الشارة (Tag) تستخدم الألوان الخاصة بك من DomainIcon */}
           <span className={`mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm transition-colors ${domainCls(item.domaine)}`}>
             <DomainIcon domaine={item.domaine} size={14} />
             {item.domaine}
@@ -35,7 +35,7 @@ export default function SpecialtyCard({ item }: { item: Specialty }) {
           </p>
         </div>
 
-        {/* تذييل البطاقة (الشهادة والعتبة) */}
+        {/* تذييل البطاقة */}
         <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
           <span className="font-medium">{item.diplome} · {item.duree}</span>
           {min !== null && (
@@ -46,7 +46,7 @@ export default function SpecialtyCard({ item }: { item: Specialty }) {
         </div>
       </Link>
       
-      {/* زر المفضلة يظهر بشكل أنيق في الزاوية */}
+      {/* زر المفضلة */}
       <FavoriteButton slug={item.slug} className="absolute left-3 top-3 z-10" />
     </div>
   );
