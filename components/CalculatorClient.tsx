@@ -19,7 +19,7 @@ const SUBJECTS = {
   lang3: "اللغة الأجنبية الثالثة",
 };
 
-// 2. المعادلات الدقيقة بناءً على الجدول
+// 2. المعادلات بناءً على الجدول
 const formulas: Record<string, Record<string, { subject: string; coef: number }[]>> = {
   "علوم تجريبية": {
     "علوم طبية": [{ subject: SUBJECTS.general, coef: 2 }, { subject: SUBJECTS.science, coef: 2 }, { subject: SUBJECTS.math, coef: 1 }],
@@ -94,15 +94,16 @@ export default function CalculatorClient() {
     return sumWeighted / sumCoefficients;
   }, [marks, requiredSubjects]);
 
+  // تم تعديل "seuil_2025" إلى "seuils" هنا
   const recommendations = items.filter(s => s.filiere.includes(serie)).sort((a, b) => {
-    const aa = a.seuil_2025.find(x => x.serie === serie)?.moyenne ?? 0;
-    const bb = b.seuil_2025.find(x => x.serie === serie)?.moyenne ?? 0;
+    const aa = a.seuils?.find((x: any) => x.serie === serie)?.moyenne ?? 0;
+    const bb = b.seuils?.find((x: any) => x.serie === serie)?.moyenne ?? 0;
     return bb - aa;
   });
 
   return (
     <section className="container-page max-w-4xl py-12">
-      <h1 className="section-title mb-3">حاسبة المعدل الموزون الجديدة</h1>
+      <h1 className="section-title mb-3">حاسبة المعدل الموزون</h1>
       <p className="mb-8 text-slate-500">اختر شعبتك والميدان، وأدخل العلامات المطلوبة فقط لحساب معدلك.</p>
       
       <div className="grid gap-5 rounded-3xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
@@ -156,7 +157,8 @@ export default function CalculatorClient() {
               <b>{x.nom_ar}</b>
               <p className="mt-1 text-xs text-slate-500">{x.domaine}</p>
             </div>
-            <span className="text-sm text-slate-500">عتبة نموذجية: {x.seuil_2025.find(z => z.serie === serie)?.moyenne ?? "غير محددة"}</span>
+            {/* تم تعديل "seuil_2025" إلى "seuils" هنا أيضاً */}
+            <span className="text-sm text-slate-500">عتبة نموذجية: {x.seuils?.find((z: any) => z.serie === serie)?.moyenne ?? "غير محددة"}</span>
           </div>
         ))}
       </div>
