@@ -5,8 +5,6 @@ import { deleteSpecialty, togglePublish } from "@/app/admin/actions";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 
 export const dynamic = "force-dynamic";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export default async function Dashboard() {
   await requireAdmin();
   const sb = adminClient();
