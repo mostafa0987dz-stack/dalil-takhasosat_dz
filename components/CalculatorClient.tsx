@@ -19,7 +19,7 @@ const SUBJECTS = {
   lang3: "اللغة الأجنبية الثالثة",
 };
 
-// 2. المعادلات بناءً على الجدول (الصيغة: [المادة]: [المعامل])
+// 2. المعادلات الدقيقة بناءً على الجدول
 const formulas: Record<string, Record<string, { subject: string; coef: number }[]>> = {
   "علوم تجريبية": {
     "علوم طبية": [{ subject: SUBJECTS.general, coef: 2 }, { subject: SUBJECTS.science, coef: 2 }, { subject: SUBJECTS.math, coef: 1 }],
@@ -68,26 +68,22 @@ export default function CalculatorClient() {
 
   const [marks, setMarks] = useState<Record<string, string>>({});
 
-  // إعادة تعيين العلامات عند تغيير الشعبة
   useEffect(() => {
     const newFields = Object.keys(formulas[serie] || {});
     setField(newFields[0] || "");
     setMarks({});
   }, [serie]);
 
-  // جلب المواد المطلوبة للميدان المختار
   const requiredSubjects = useMemo(() => {
     return formulas[serie]?.[field] || [];
   }, [serie, field]);
 
-  // حساب المعدل الموزون
   const weightedAverage = useMemo(() => {
     let sumWeighted = 0;
     let sumCoefficients = 0;
 
     requiredSubjects.forEach((req) => {
       const markValue = parseFloat(marks[req.subject]);
-      
       if (Number.isFinite(markValue) && markValue >= 0 && markValue <= 20) {
         sumWeighted += markValue * req.coef;
         sumCoefficients += req.coef;
@@ -106,7 +102,7 @@ export default function CalculatorClient() {
 
   return (
     <section className="container-page max-w-4xl py-12">
-      <h1 className="section-title mb-3">حاسبة المعدل الموزون</h1>
+      <h1 className="section-title mb-3">حاسبة المعدل الموزون الجديدة</h1>
       <p className="mb-8 text-slate-500">اختر شعبتك والميدان، وأدخل العلامات المطلوبة فقط لحساب معدلك.</p>
       
       <div className="grid gap-5 rounded-3xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
