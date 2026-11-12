@@ -5,7 +5,6 @@ import { saveSpecialty, type FormState } from "@/app/admin/actions";
 import { SERIE_NAMES } from "@/lib/constants";
 import SubmitButton from "./SubmitButton";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const initialState: FormState = {};
 const join = (a?: string[]) => (a ?? []).join("\n");
 
