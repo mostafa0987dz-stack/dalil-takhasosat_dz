@@ -3,18 +3,18 @@ import { requireAdmin } from "@/lib/auth";
 import { adminClient } from "@/lib/supabase";
 import { deleteSpecialty, togglePublish } from "@/app/admin/actions";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
-import { Search, Plus, FileText } from "lucide-react";
+import { Search, Plus, FileText } from "lucide-react"; // أضفنا أيقونات جديدة
 
 export const dynamic = "force-dynamic";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export default async function Dashboard() {
+export default async function SpecialtiesList() {
   await requireAdmin();
   const sb = adminClient();
   
   const [rowsRes, logsRes] = await Promise.all([
     sb.from("specialties").select("slug,nom_ar,domaine,published,updated_at,thresholds(count)").order("updated_at", { ascending: false }),
-    sb.from("audit_log").select("*").order("created_at", { ascending: false }).limit(5), // قللنا العدد قليلاً
+    sb.from("audit_log").select("*").order("created_at", { ascending: false }).limit(5), // قللنا العدد ليناسب التصميم
   ]);
   
   const rows = (rowsRes.data ?? []) as any[];
@@ -24,14 +24,14 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* الترويسة */}
+      {/* الترويسة الزجاجية */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 dark:text-white">التخصصات</h1>
           <p className="mt-1 text-slate-500 dark:text-slate-400">{rows.length} تخصصاً · {published} منشور · {rows.length - published} مسودة</p>
         </div>
         <Link href="/admin/specialties/new" className="flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700">
-          <Plus size={18} /> إضافة تخصص
+          <Plus size={18} /> إضافة تخصص جديد
         </Link>
       </div>
 
@@ -39,6 +39,7 @@ export default async function Dashboard() {
 
       {/* الجدول الزجاجي */}
       <div className="rounded-3xl border border-white/50 bg-white/60 shadow-sm backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-800/60 overflow-hidden">
+        {/* شريط البحث (الواجهة فقط حالياً) */}
         <div className="p-6 border-b border-white/20 dark:border-slate-700/50 flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -100,7 +101,7 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      {/* سجل العمليات */}
+      {/* سجل العمليات الزجاجي */}
       <section className="rounded-3xl border border-white/50 bg-white/60 shadow-sm backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-800/60">
         <h2 className="p-6 text-xl font-bold text-slate-800 dark:text-white border-b border-white/20 dark:border-slate-700/50">آخر العمليات</h2>
         <ul className="divide-y divide-white/20 dark:divide-slate-700/50 p-2">
