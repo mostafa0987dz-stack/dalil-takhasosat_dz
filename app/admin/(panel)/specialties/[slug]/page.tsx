@@ -5,7 +5,6 @@ import SpecialtyForm from "@/components/admin/SpecialtyForm";
 
 export const dynamic = "force-dynamic";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export default async function EditSpecialty({ params }: { params: { slug: string } }) {
   await requireAdmin();
   const sb = adminClient();
