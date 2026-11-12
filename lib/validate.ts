@@ -12,7 +12,6 @@ const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : []);
 const fail = (error: string): Result => ({ ok: false, error });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateSpecialty(raw: any): Result {
   const slug = text(raw?.slug).toLowerCase();
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) return fail("المعرّف (slug) يجب أن يكون بحروف لاتينية صغيرة وأرقام وشرطات فقط، مثل genie-civil");
