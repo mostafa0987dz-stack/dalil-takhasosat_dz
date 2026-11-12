@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { BookOpen, Calculator, GitCompare, ListChecks, type LucideIcon } from "lucide-react";
 import { getSpecialties } from "@/lib/data";
@@ -6,9 +8,39 @@ import { SERIES } from "@/lib/constants";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import HeroSearch from "@/components/HeroSearch";
 import DomainIcon from "@/components/DomainIcon";
-import AnimatedNumber from "@/components/AnimatedNumber";
+import { useEffect, useState } from "react";
 
 export const revalidate = 600;
+
+// 1. مكون الرقم المتحرك (تمت إضافته هنا لتجنب إنشاء ملف جديد)
+function AnimatedNumber({ value, duration = 2000 }: { value: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTime: number | null = null;
+    let animationFrame: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      // دالة رياضية لجعل الحركة تتباطأ في النهاية (Ease-out)
+      const easeOut = 1 - Math.pow(1 - progress / duration, 3);
+      const current = Math.floor(easeOut * value);
+
+      if (current < value) {
+        setCount(current);
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        setCount(value);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [value, duration]);
+
+  return <span>{count.toLocaleString("ar-DZ")}</span>;
+}
 
 const tools: { t: string; d: string; u: string; Icon: LucideIcon }[] = [
   { t: "حاسبة المعدل", d: "قارن معدلك بعتبات التخصصات حسب شعبتك.", u: "/calculator", Icon: Calculator },
@@ -26,6 +58,7 @@ export default async function Home() {
     { n: domains.length, l: "مجالات دراسة" },
     { n: data.reduce((a, s) => a + s.seuils.length, 0), l: "عتبة مسجلة" },
   ];
+
   return (
     <div>
       <section className="bg-gradient-to-bl from-blue-950 via-blue-800 to-indigo-700 py-20 text-white">
@@ -53,7 +86,6 @@ export default async function Home() {
         <p className="mb-2 text-sm font-bold text-blue-600">ابدأ من هنا</p>
         <h2 className="section-title mb-7">أدوات تساعدك في الاختيار</h2>
         
-        {/* قسم الأدوات المحسن */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tools.map(({ t, d, u, Icon }, index) => {
             const colors = [
@@ -70,7 +102,6 @@ export default async function Home() {
                 href={u} 
                 className={`group card relative overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl ${color.border}`}
               >
-                {/* خلفية متدرجة خفيفة عند التمرير */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10">
@@ -98,16 +129,17 @@ export default async function Home() {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{data.slice(0, 3).map((s) => <SpecialtyCard key={s.slug} item={s} />)}</div>
       </section>
 
+      {/* قسم الإحصائيات مع الأرقام المتحركة */}
       <section className="container-page pb-4">
         <div className="grid grid-cols-2 gap-4 rounded-3xl bg-slate-900 p-8 text-white md:grid-cols-4">
           {stats.map((x) => (
-  <div key={x.l}>
-    <div className="text-3xl font-black">
-      <AnimatedNumber value={x.n} />
-    </div>
-    <div className="mt-2 text-sm text-slate-300">{x.l}</div>
-  </div>
-))}
+            <div key={x.l}>
+              <div className="text-3xl font-black">
+                <AnimatedNumber value={x.n} />
+              </div>
+              <div className="mt-2 text-sm text-slate-300">{x.l}</div>
+            </div>
+          ))}
         </div>
         {hasDemo(data) && <p className="mt-3 text-center text-sm text-slate-500">العتبات المعروضة تجريبية وليست رسمية.</p>}
       </section>
