@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { BookOpen, Calculator, GitCompare, ListChecks, type LucideIcon } from "lucide-react";
 import { getSpecialties } from "@/lib/data";
@@ -8,39 +6,9 @@ import { SERIES } from "@/lib/constants";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import HeroSearch from "@/components/HeroSearch";
 import DomainIcon from "@/components/DomainIcon";
-import { useEffect, useState } from "react";
+import AnimatedNumber from "@/components/AnimatedNumber"; // استيراد المكون الجديد
 
 export const revalidate = 600;
-
-// 1. مكون الرقم المتحرك (تمت إضافته هنا لتجنب إنشاء ملف جديد)
-function AnimatedNumber({ value, duration = 2000 }: { value: number; duration?: number }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTime: number | null = null;
-    let animationFrame: number;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = timestamp - startTime;
-      // دالة رياضية لجعل الحركة تتباطأ في النهاية (Ease-out)
-      const easeOut = 1 - Math.pow(1 - progress / duration, 3);
-      const current = Math.floor(easeOut * value);
-
-      if (current < value) {
-        setCount(current);
-        animationFrame = requestAnimationFrame(animate);
-      } else {
-        setCount(value);
-      }
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [value, duration]);
-
-  return <span>{count.toLocaleString("ar-DZ")}</span>;
-}
 
 const tools: { t: string; d: string; u: string; Icon: LucideIcon }[] = [
   { t: "حاسبة المعدل", d: "قارن معدلك بعتبات التخصصات حسب شعبتك.", u: "/calculator", Icon: Calculator },
@@ -58,7 +26,7 @@ export default async function Home() {
     { n: domains.length, l: "مجالات دراسة" },
     { n: data.reduce((a, s) => a + s.seuils.length, 0), l: "عتبة مسجلة" },
   ];
-
+  
   return (
     <div>
       <section className="bg-gradient-to-bl from-blue-950 via-blue-800 to-indigo-700 py-20 text-white">
