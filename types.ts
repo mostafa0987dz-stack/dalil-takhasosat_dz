@@ -20,4 +20,5 @@ export type Specialty = {
   seuils: Seuil[];
   universites: string[];
   tags: string[];
+  updated_at?: string;
 };
