@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; }
+  .dark { color-scheme: dark; }
+  html { scroll-behavior: smooth; }
+  body { @apply relative bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100; }
+
+  /* خلفية باستيل ناعمة ثابتة خلف كل الصفحات */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60rem 40rem at 90% -10%, rgba(165, 180, 252, 0.35), transparent 60%),
+      radial-gradient(50rem 36rem at 0% 20%, rgba(153, 246, 228, 0.28), transparent 60%),
+      radial-gradient(46rem 34rem at 60% 110%, rgba(251, 207, 232, 0.30), transparent 60%);
+  }
+  .dark body::before {
+    background:
+      radial-gradient(60rem 40rem at 90% -10%, rgba(79, 70, 229, 0.22), transparent 60%),
+      radial-gradient(50rem 36rem at 0% 20%, rgba(13, 148, 136, 0.16), transparent 60%),
+      radial-gradient(46rem 34rem at 60% 110%, rgba(190, 24, 93, 0.14), transparent 60%);
+  }
+  :focus-visible { @apply outline outline-2 outline-offset-2 outline-blue-500; }
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+
+  /* سطح زجاجي أساسي */
+  .glass { @apply rounded-3xl border border-white/70 bg-white/60 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/50; }
+  .card { @apply rounded-3xl border border-white/70 bg-white/60 p-5 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/50; }
+  .card-hover { @apply transition-all duration-300 hover:-translate-y-1 hover:border-blue-300/70 hover:bg-white/80 hover:shadow-xl dark:hover:border-blue-400/30 dark:hover:bg-slate-900/70; }
+
+  .input { @apply w-full rounded-2xl border border-slate-300/70 bg-white/70 px-4 py-3 outline-none backdrop-blur transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-slate-700/70 dark:bg-slate-900/60 dark:focus:ring-blue-950; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:opacity-60; }
+  .btn-ghost { @apply inline-flex items-center gap-2 rounded-2xl border border-slate-300/70 bg-white/50 px-4 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/90 dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-800; }
+  .btn-danger { @apply inline-flex items-center gap-2 rounded-2xl border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950; }
+  .chip { @apply whitespace-nowrap rounded-full border border-slate-300/70 bg-white/50 px-4 py-1.5 text-sm font-semibold backdrop-blur transition hover:border-blue-400 dark:border-slate-700/70 dark:bg-slate-900/40; }
+  .chip-active { @apply border-blue-600 bg-blue-600 text-white hover:border-blue-600 dark:border-blue-600; }
+  .section-title { @apply text-2xl font-black tracking-tight md:text-3xl; }
+  .th { @apply p-4 text-sm font-bold; }
+  .table-wrap { @apply overflow-x-auto rounded-3xl border border-white/70 bg-white/60 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/50; }
+}
+
+/* ===== الطباعة / حفظ PDF ===== */
+.print-only { display: none; }
+@media print {
+  @page { margin: 14mm; }
+  header, footer, .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  body { background: #fff !important; color: #000 !important; }
+  body::before { display: none !important; }
+  .glass, .card, .table-wrap { background: #fff !important; box-shadow: none !important; backdrop-filter: none !important; border: 1px solid #ddd !important; }
+  .tab-panel[hidden] { display: block !important; }
+  .print-hero { background: #fff !important; color: #000 !important; border: 1px solid #ddd; }
+  .print-hero * { color: #000 !important; }
+  a { color: inherit !important; text-decoration: none !important; }
+  section { break-inside: avoid; }
+}
