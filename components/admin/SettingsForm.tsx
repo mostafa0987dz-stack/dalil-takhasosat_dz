@@ -1,0 +1,8 @@
+"use client";
+import { useFormState, useFormStatus } from "react-dom";
+import { saveSiteSettings, type FormState } from "@/app/admin/actions";
+function Submit(){const {pending}=useFormStatus();return <button disabled={pending} className="btn-primary">{pending?"جارٍ الحفظ...":"حفظ الإعدادات"}</button>}
+export default function SettingsForm({initial}:{initial:any}){
+ const [state,action]=useFormState(saveSiteSettings,{} as FormState); const enabled=initial?.enabled_locales ?? ["ar","fr","en"];
+ return <form action={action} className="card max-w-3xl space-y-5"><div><label className="mb-2 block text-sm font-bold">اسم الموقع</label><input name="site_name" defaultValue={initial?.site_name ?? "دليل التخصصات الجامعية الجزائرية"} className="input" maxLength={100}/></div><div><label className="mb-2 block text-sm font-bold">اللغة الافتراضية</label><select name="default_locale" defaultValue={initial?.default_locale ?? "ar"} className="input"><option value="ar">العربية</option><option value="fr">Français</option><option value="en">English</option></select></div><div><p className="mb-2 text-sm font-bold">اللغات المفعّلة</p><div className="flex flex-wrap gap-5">{[["ar","العربية"],["fr","Français"],["en","English"]].map(([v,l])=><label key={v} className="flex items-center gap-2"><input type="checkbox" name="languages" value={v} defaultChecked={enabled.includes(v)}/>{l}</label>)}</div></div><div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-900"><b>سياسة الإعلانات المعتمدة</b><p className="mt-1 text-slate-500">كثافة متوازنة · مراجعة يدوية قبل النشر · تسعير شهري ومبني على الأداء.</p></div>{state.error&&<p className="text-sm text-red-600">{state.error}</p>}{state.ok&&<p className="text-sm text-emerald-600">{state.ok}</p>}<Submit/></form>
+}
