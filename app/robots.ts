@@ -1,10 +1,15 @@
-import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/constants";
+
+import type { MetadataRoute } from 'next'
+
+const SITE_URL = 'https://dalil-takhasosat-dz-main.xvertex.workers.dev'
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/admin/", "/favorites"] },
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: ['/admin', '/admin/', '/favorites'],
+    },
     sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
-  };
+  }
 }
