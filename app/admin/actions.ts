@@ -241,3 +241,33 @@ export async function saveSiteSettings(_: FormState, fd: FormData): Promise<Form
   revalidatePath("/admin/settings");
   return { ok: "تم حفظ الإعدادات." };
 }
+
+/* ---------- إدارة شعب البكالوريا ---------- */
+export async function saveBacSeries(fd: FormData) {
+  const email = await requireAdmin();
+  const slug = String(fd.get("slug") ?? "").trim().toLowerCase();
+  const name_ar = String(fd.get("name_ar") ?? "").trim();
+  const name_fr = String(fd.get("name_fr") ?? "").trim();
+  const name_en = String(fd.get("name_en") ?? "").trim();
+  const sort_order = Number(fd.get("sort_order") ?? 0);
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || name_ar.length < 2 || name_ar.length > 100 || !Number.isInteger(sort_order) || sort_order < 0 || sort_order > 999) {
+    throw new Error("تحقق من المعرّف والاسم العربي والترتيب.");
+  }
+  const { error } = await adminClient().from("bac_series").upsert({ slug, name_ar, name_fr, name_en, sort_order, is_active: fd.get("is_active") === "on", updated_at: new Date().toISOString() });
+  if (error) throw new Error(`تعذر حفظ الشعبة: ${error.message}`);
+  await log(email, "bac_series_save", slug);
+  revalidatePath("/admin/series");
+  revalidatePath("/bac");
+}
+
+export async function deleteBacSeries(fd: FormData) {
+  const email = await requireAdmin();
+  const slug = String(fd.get("slug") ?? "").trim();
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return;
+  // لا نحذف الشعبة فعلياً حتى لا نفقد تاريخ العتبات المرتبط بها؛ نعطّلها فقط.
+  const { error } = await adminClient().from("bac_series").update({ is_active: false, updated_at: new Date().toISOString() }).eq("slug", slug);
+  if (error) throw new Error(`تعذر تعطيل الشعبة: ${error.message}`);
+  await log(email, "bac_series_disable", slug);
+  revalidatePath("/admin/series");
+  revalidatePath("/bac");
+}

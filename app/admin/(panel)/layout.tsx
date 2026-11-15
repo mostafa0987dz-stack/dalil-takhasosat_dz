@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, PlusCircle, FileUp, Globe2, LogOut, ShieldCheck, Megaphone, Settings } from "lucide-react";
+import { LayoutDashboard, PlusCircle, FileUp, Globe2, LogOut, ShieldCheck, Megaphone, Settings, GraduationCap } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
 
@@ -10,6 +10,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     { href: "/admin", label: "نظرة عامة", Icon: LayoutDashboard },
     { href: "/admin/specialties/new", label: "إضافة تخصص", Icon: PlusCircle },
     { href: "/admin/import", label: "استيراد البيانات", Icon: FileUp },
+    { href: "/admin/series", label: "إدارة الشعب", Icon: GraduationCap },
     { href: "/admin/ads", label: "إدارة الإعلانات", Icon: Megaphone },
     { href: "/admin/settings", label: "الإعدادات", Icon: Settings },
   ];

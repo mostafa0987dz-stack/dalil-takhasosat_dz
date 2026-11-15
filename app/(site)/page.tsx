@@ -2,43 +2,45 @@ import Link from "next/link";
 import { BookOpen, Calculator, GitCompare, ListChecks, type LucideIcon } from "lucide-react";
 import { getSpecialties } from "@/lib/data";
 import { hasDemo } from "@/lib/specialty";
-import { SERIES } from "@/lib/constants";
+import { getBacSeries } from "@/lib/series";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import HeroSearch from "@/components/HeroSearch";
 import DomainIcon from "@/components/DomainIcon";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import AdSlot from "@/components/AdSlot";
+import { getLocale, messages } from "@/lib/i18n";
 
 export const revalidate = 600;
 
-const tools: { t: string; d: string; u: string; Icon: LucideIcon }[] = [
-  { t: "حاسبة المعدل", d: "قارن معدلك بعتبات التخصصات حسب شعبتك.", u: "/calculator", Icon: Calculator },
-  { t: "عتبات القبول", d: "جدول قابل للبحث والترتيب حسب الشعبة والسنة.", u: "/seuils", Icon: ListChecks },
-  { t: "مقارنة التخصصات", d: "قارن حتى 3 تخصصات جنباً إلى جنب.", u: "/compare", Icon: GitCompare },
-  { t: "تخصصات كل شعبة", d: "اكتشف ما تفتحه لك شعبتك من تخصصات.", u: "/bac", Icon: BookOpen },
-];
-
 export default async function Home() {
-  const data = await getSpecialties();
+  const locale = await getLocale();
+  const t = messages[locale];
+  const tools: { t: string; d: string; u: string; Icon: LucideIcon }[] = [
+    { t: t.calculator, d: t.calculatorDesc, u: "/calculator", Icon: Calculator },
+    { t: t.thresholds, d: t.seuilDesc, u: "/seuils", Icon: ListChecks },
+    { t: t.compare, d: t.compareDesc, u: "/compare", Icon: GitCompare },
+    { t: t.series, d: t.seriesDesc, u: "/bac", Icon: BookOpen },
+  ];
+  const [data, series] = await Promise.all([getSpecialties(), getBacSeries()]);
   const domains = Array.from(new Set(data.map((x) => x.domaine)));
   const stats = [
-    { n: data.length, l: "تخصصاً في الدليل" },
-    { n: SERIES.length, l: "شعب بكالوريا" },
-    { n: domains.length, l: "مجالات دراسة" },
-    { n: data.reduce((a, s) => a + s.seuils.length, 0), l: "عتبة مسجلة" },
+    { n: data.length, l: t.statsSpecialties },
+    { n: series.length, l: t.statsSeries },
+    { n: domains.length, l: t.statsDomains },
+    { n: data.reduce((a, s) => a + s.seuils.length, 0), l: t.statsThresholds },
   ];
   
   return (
     <div>
-      <section className="relative overflow-hidden bg-gradient-to-bl from-blue-950 via-blue-800 to-indigo-700 py-20 text-white">
+      <section className="relative z-30 overflow-visible bg-gradient-to-bl from-blue-950 via-blue-800 to-indigo-700 py-20 text-white">
         <div aria-hidden className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-pink-300/20 blur-3xl" />
         <div aria-hidden className="pointer-events-none absolute -bottom-24 right-10 h-72 w-72 rounded-full bg-teal-300/20 blur-3xl" />
-        <div className="container-page relative grid items-center gap-10 md:grid-cols-2">
+        <div className="container-page relative z-10 grid items-center gap-10 md:grid-cols-2">
           <div>
-            <span className="mb-4 inline-block rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm backdrop-blur">مرجعك لاختيار التخصص الجامعي</span>
-            <h1 className="mb-5 text-4xl font-black leading-tight md:text-6xl">اكتشف طريقك<br />نحو المستقبل</h1>
-            <p className="mb-8 max-w-xl leading-8 text-blue-100">تعرّف على التخصصات الجامعية الجزائرية، شعب البكالوريا، مجالات الدراسة وآفاق العمل في مكان واحد.</p>
-            <HeroSearch items={data.map(({ slug, nom_ar, nom_fr, tags }) => ({ slug, nom_ar, nom_fr, tags }))} />
+            <span className="mb-4 inline-block rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm backdrop-blur">{t.heroTag}</span>
+            <h1 className="mb-5 text-4xl font-black leading-tight md:text-6xl">{t.heroTitle1}<br />{t.heroTitle2}</h1>
+            <p className="mb-8 max-w-xl leading-8 text-blue-100">{t.heroDesc}</p>
+            <HeroSearch locale={locale} items={data.map(({ slug, nom_ar, nom_fr, nom_en, tags }) => ({ slug, nom_ar, nom_fr, nom_en, tags }))} />
           </div>
           <div className="hidden rounded-3xl border border-white/25 bg-white/10 p-8 shadow-2xl backdrop-blur-xl md:block">
             <div className="grid grid-cols-2 gap-4">
@@ -53,10 +55,10 @@ export default async function Home() {
         </div>
       </section>
 
-      <AdSlot placement="home" />
+      <div className="relative z-0"><AdSlot placement="home" /></div>
       <section className="container-page py-14">
-        <p className="mb-2 text-sm font-bold text-blue-600">ابدأ من هنا</p>
-        <h2 className="section-title mb-7">أدوات تساعدك في الاختيار</h2>
+        <p className="mb-2 text-sm font-bold text-blue-600">{t.start}</p>
+        <h2 className="section-title mb-7">{t.toolsTitle}</h2>
         
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tools.map(({ t, d, u, Icon }, index) => {
@@ -95,8 +97,8 @@ export default async function Home() {
 
       <section className="container-page pb-16">
         <div className="mb-7 flex items-center justify-between">
-          <h2 className="section-title">تخصصات مقترحة</h2>
-          <Link href="/specialties" className="font-bold text-blue-600">عرض الكل ←</Link>
+          <h2 className="section-title">{t.recommended}</h2>
+          <Link href="/specialties" className="font-bold text-blue-600">{t.viewAll} ←</Link>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{data.slice(0, 3).map((s) => <SpecialtyCard key={s.slug} item={s} />)}</div>
       </section>

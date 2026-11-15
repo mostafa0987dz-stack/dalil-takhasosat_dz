@@ -113,3 +113,8 @@ Dynamic App Router pages now await the `params` Promise required by Next.js 15:
 - `app/admin/(panel)/specialties/[slug]/page.tsx`
 
 After installing dependencies, run `npm run typecheck` and `npm run preview` before deploying.
+
+## تحديث لوحة الإدارة (16-11-2026)
+لتفعيل إدارة شعب البكالوريا الجديدة، شغّل مرة واحدة ملف `supabase/migrations/20261116_admin_enhancements.sql` من Supabase SQL Editor. ينشئ جدول `bac_series` مع سياسات القراءة العامة للشعب النشطة، ويضيف الشعب الست الأساسية دون حذف بيانات سابقة. بعدها ستظهر صفحة «إدارة الشعب» في لوحة `/admin/series`.
+
+اختيار اللغة من شريط الموقع يحفظ اللغة في Cookie. تمت ترجمة شريط التنقل والصفحة الرئيسية وصفحات عرض الشعب إلى العربية والفرنسية والإنجليزية؛ أما بقية صفحات المحتوى فتحتاج استكمال ترجمتها قبل اعتبار تغطية اللغات كاملة.

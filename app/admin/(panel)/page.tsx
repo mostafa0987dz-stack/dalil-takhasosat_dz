@@ -3,20 +3,34 @@ import { BookCheck, FileEdit, FlaskConical, Layers, ListChecks, Download } from 
 import { requireAdmin } from "@/lib/auth";
 import { adminClient } from "@/lib/supabase";
 import AdminTable, { type AdminRow } from "@/components/admin/AdminTable";
+import AdminTrendChart, { type TrendPoint } from "@/components/admin/AdminTrendChart";
 
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   await requireAdmin();
   const sb = adminClient();
-  const [rowsRes, logsRes, thrRes] = await Promise.all([
+  const sinceDate = new Date(); sinceDate.setHours(0,0,0,0); sinceDate.setDate(sinceDate.getDate()-29);
+  const since = sinceDate.toISOString();
+  const [rowsRes, logsRes, thrRes, eventsRes, campaignsRes, activityRes] = await Promise.all([
     sb.from("specialties").select("slug,nom_ar,domaine,published,updated_at").order("updated_at", { ascending: false }),
     sb.from("audit_log").select("*").order("created_at", { ascending: false }).limit(10),
     sb.from("thresholds").select("specialty_slug,is_demo"),
+    sb.from("ad_events").select("event_type,event_day").gte("event_day", since.slice(0, 10)).limit(10000),
+    sb.from("ad_campaigns").select("id,status"),
+    sb.from("audit_log").select("created_at").gte("created_at", since).limit(10000),
   ]);
   const base = (rowsRes.data ?? []) as any[];
   const logs = (logsRes.data ?? []) as any[];
   const thr = (thrRes.data ?? []) as any[];
+  const events = (eventsRes.data ?? []) as any[];
+  const campaigns = (campaignsRes.data ?? []) as any[];
+  const dayMap = new Map<string, TrendPoint>();
+  for (let i = 29; i >= 0; i--) { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); const key = d.toISOString().slice(0,10); dayMap.set(key, { day:key, actions:0, impressions:0, clicks:0 }); }
+  for (const item of (activityRes.data ?? []) as any[]) { const key = String(item.created_at ?? "").slice(0,10); const point = dayMap.get(key); if (point) point.actions++; }
+  for (const event of events) { const key = String(event.event_day); const point = dayMap.get(key); if (point) { if (event.event_type === "impression") point.impressions++; if (event.event_type === "click") point.clicks++; } }
+  const trend = Array.from(dayMap.values());
+  const pendingCampaigns = campaigns.filter(c => c.status === "pending").length;
 
   const rows: AdminRow[] = base.map((r) => {
     const mine = thr.filter((t) => t.specialty_slug === r.slug);
@@ -34,6 +48,7 @@ export default async function Dashboard() {
     { l: "عتبات مسجلة", v: thr.length, Icon: ListChecks, c: "text-violet-600 bg-violet-100/70 dark:bg-violet-950/60" },
     { l: "عتبات تجريبية", v: demoCount, Icon: FlaskConical, c: "text-amber-600 bg-amber-100/70 dark:bg-amber-950/60" },
     { l: "مجالات", v: domains, Icon: Layers, c: "text-rose-600 bg-rose-100/70 dark:bg-rose-950/60" },
+    { l: "حملات بانتظار المراجعة", v: pendingCampaigns, Icon: FlaskConical, c: "text-orange-600 bg-orange-100/70 dark:bg-orange-950/60" },
   ];
 
   return (
@@ -50,7 +65,7 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-7">
         {kpis.map(({ l, v, Icon, c }) => (
           <div key={l} className="card !p-4">
             <span className={`mb-3 inline-flex rounded-2xl p-2.5 ${c}`}><Icon size={18} aria-hidden /></span>
@@ -60,6 +75,8 @@ export default async function Dashboard() {
         ))}
       </div>
 
+      <AdminTrendChart points={trend} />
+
       <section className="card space-y-4">
         <div><h2 className="text-xl font-black">توزيع التخصصات حسب المجال</h2><p className="text-xs text-slate-500">تحليل مبني على بيانات التخصصات المسجلة حالياً.</p></div>
         <div className="space-y-3">
@@ -68,6 +85,7 @@ export default async function Dashboard() {
         </div>
       </section>
 
+      {(eventsRes.error || campaignsRes.error || activityRes.error) && <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">بعض مؤشرات الإعلانات غير متاحة؛ تأكد من تنفيذ مخطط قاعدة البيانات وتسجيل أحداث الإعلانات.</p>}
       {rowsRes.error && <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm text-red-700">تعذّرت قراءة البيانات: {rowsRes.error.message}. تأكد من تنفيذ supabase/schema.sql.</p>}
       {!rows.length && !rowsRes.error ? (
         <p className="card text-center text-slate-600 dark:text-slate-400">لا توجد تخصصات بعد. ابدأ بـ <Link href="/admin/import" className="font-bold text-blue-600">استيراد data/specialties.json</Link>.</p>
