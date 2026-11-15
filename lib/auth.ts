@@ -9,7 +9,8 @@ export function allowedEmails(): string[] {
 export async function getAdminEmail(): Promise<string | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const token = cookies().get(COOKIE)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE)?.value;
   if (!url || !anon || !token || token.length > 8192) return null;
   try {
     const sb = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });

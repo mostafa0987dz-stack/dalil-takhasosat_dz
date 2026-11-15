@@ -22,7 +22,8 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   // رسالة موحدة حتى لا نكشف هل البريد موجود أم لا
   if (error || !data.session || !allowedEmails().includes(email)) return { error: "بيانات الدخول غير صحيحة أو الحساب غير مصرّح له." };
-  cookies().set(COOKIE, data.session.access_token, {
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE, data.session.access_token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -33,7 +34,8 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
 }
 
 export async function logoutAction() {
-  cookies().delete(COOKIE);
+  const cookieStore = await cookies();
+  cookieStore.delete(COOKIE);
   redirect("/admin/login");
 }
 
