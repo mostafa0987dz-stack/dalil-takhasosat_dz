@@ -10,13 +10,15 @@ export function generateStaticParams() {
   return SERIES.map((s) => ({ serie: s.slug }));
 }
 
-export function generateMetadata({ params }: { params: { serie: string } }): Metadata {
-  const s = SERIES.find((x) => x.slug === params.serie);
+export async function generateMetadata({ params }: { params: Promise<{ serie: string }> }): Promise<Metadata> {
+  const { serie: serieSlug } = await params;
+  const s = SERIES.find((x) => x.slug === serieSlug);
   return s ? { title: `تخصصات شعبة ${s.name}` } : {};
 }
 
-export default async function BacPage({ params }: { params: { serie: string } }) {
-  const serie = SERIES.find((x) => x.slug === params.serie);
+export default async function BacPage({ params }: { params: Promise<{ serie: string }> }) {
+  const { serie: serieSlug } = await params;
+  const serie = SERIES.find((x) => x.slug === serieSlug);
   if (!serie) notFound();
   const available = (await getSpecialties()).filter((x) => x.filiere.includes(serie.name));
   return (

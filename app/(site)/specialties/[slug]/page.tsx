@@ -22,8 +22,9 @@ export async function generateStaticParams() {
 
 const clip = (t: string, n = 155) => (t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t);
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const s = await getSpecialty(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const s = await getSpecialty(slug);
   if (!s) return { title: "التخصص غير موجود", robots: { index: false } };
   const title = `تخصص ${s.nom_ar} في الجزائر: عتبات القبول والآفاق`;
   const description = clip(`${s.nom_ar} (${s.nom_fr}) — ${s.diplome}، ${s.duree}. ${s.description_ar}`);
@@ -38,9 +39,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function SpecialtyDetails({ params }: { params: { slug: string } }) {
+export default async function SpecialtyDetails({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const all = await getSpecialties();
-  const s = all.find((x) => x.slug === params.slug);
+  const s = all.find((x) => x.slug === slug);
   if (!s) notFound();
 
   const similar = similarTo(s, all, 3);

@@ -5,13 +5,14 @@ import SpecialtyForm from "@/components/admin/SpecialtyForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditSpecialty({ params }: { params: { slug: string } }) {
+export default async function EditSpecialty({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdmin();
+  const { slug } = await params;
   const sb = adminClient();
-  const isNew = params.slug === "new";
+  const isNew = slug === "new";
   let initial: any = null;
   if (!isNew) {
-    const { data } = await sb.from("specialties").select("*, thresholds(*)").eq("slug", params.slug).maybeSingle();
+    const { data } = await sb.from("specialties").select("*, thresholds(*)").eq("slug", slug).maybeSingle();
     if (!data) notFound();
     initial = data;
   }
