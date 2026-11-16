@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
-import { getSpecialties } from "@/lib/data";
-import SeuilsClient from "@/components/SeuilsClient";
+import Link from "next/link";
 
-export const revalidate = 600;
 export const metadata: Metadata = {
-  title: "عتبات القبول الجامعي حسب الشعبة والسنة",
-  description: "جدول قابل للبحث والفلترة لعتبات القبول في التخصصات الجامعية الجزائرية حسب شعبة البكالوريا والسنة.",
+  title: "معدلات القبول حسب الجامعة والتخصص",
+  description: "اختر التخصص ثم الجامعة لعرض معدلات القبول التاريخية حسب شعبة البكالوريا والسنة.",
   alternates: { canonical: "/seuils" },
 };
 
-export default async function SeuilsPage() {
-  const items = await getSpecialties();
-  const rows = items.flatMap((s) =>
-    s.seuils.map((x) => ({ name: s.nom_ar, slug: s.slug, domaine: s.domaine, serie: x.serie, annee: x.annee, score: x.moyenne, note: x.remarque ?? "", demo: Boolean(x.demo) })),
+export default function SeuilsPage() {
+  return (
+    <main className="container-page max-w-3xl py-16">
+      <section className="card text-center">
+        <h1 className="section-title mb-3">معدلات القبول حسب الجامعة</h1>
+        <p className="mb-6 leading-8 text-slate-600 dark:text-slate-300">أصبحت معدلات القبول مرتبطة بالجامعة والتخصص وشعبة البكالوريا والسنة. ابدأ باختيار التخصص، ثم اختر الجامعة لعرض كل المعدلات التاريخية المتاحة.</p>
+        <Link href="/specialties" className="btn-primary">تصفح التخصصات واختيار الجامعة</Link>
+      </section>
+    </main>
   );
-  return <SeuilsClient rows={rows} />;
 }

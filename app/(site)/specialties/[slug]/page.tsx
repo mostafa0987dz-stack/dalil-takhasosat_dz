@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GitCompare, MapPin } from "lucide-react";
 import { getSpecialties, getSpecialty } from "@/lib/data";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
-import { groupByRegion } from "@/lib/geo";
-import { pivotSeuils, similarTo, toIsoDuration } from "@/lib/specialty";
+import { getUniversitiesForSpecialty } from "@/lib/universities";
+import { similarTo, toIsoDuration } from "@/lib/specialty";
 import DomainIcon, { domainCls } from "@/components/DomainIcon";
-import DemoNotice from "@/components/DemoNotice";
 import FavoriteButton from "@/components/FavoriteButton";
 import ShareActions from "@/components/ShareActions";
 import SpecialtyCard from "@/components/SpecialtyCard";
@@ -46,9 +44,7 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
   if (!s) notFound();
 
   const similar = similarTo(s, all, 3);
-  const demo = s.seuils.some((x) => x.demo);
-  const pv = pivotSeuils(s);
-  const regions = groupByRegion(s.universites);
+  const universities = await getUniversitiesForSpecialty(s.slug);
   const pageUrl = `${SITE_URL}/specialties/${s.slug}`;
 
   const jsonLd = [
@@ -107,54 +103,35 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
       ),
     },
     {
-      id: "seuils", label: "عتبات القبول",
+      id: "seuils", label: "معدلات القبول",
       content: (
-        <section>
-          {demo && <DemoNotice />}
-          {pv.years.length ? (
-            <div className="table-wrap">
-              <table className="w-full min-w-[28rem] text-right">
-                <caption className="sr-only">عتبات القبول في {s.nom_ar} حسب الشعبة والسنة</caption>
-                <thead className="bg-white/50 dark:bg-slate-800/40">
-                  <tr>
-                    <th scope="col" className="th">الشعبة</th>
-                    {pv.years.map((y) => <th key={y} scope="col" className="th">{y}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pv.series.map((serie) => (
-                    <tr key={serie} className="border-t border-slate-200/60 dark:border-slate-700/60">
-                      <th scope="row" className="p-4 text-sm font-bold">{serie}</th>
-                      {pv.years.map((y) => {
-                        const t = pv.get(serie, y);
-                        return (
-                          <td key={y} className="p-4" title={t?.remarque ?? undefined}>
-                            {t ? <span className="font-bold">{t.moyenne !== null ? t.moyenne.toFixed(2) : "غير متوفر"}</span> : <span className="text-slate-400">—</span>}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : <p className="text-slate-600 dark:text-slate-400">لا توجد عتبات مسجلة لهذا التخصص بعد.</p>}
-          <p className="mt-3 text-xs text-slate-500">مرّر المؤشر فوق الرقم لعرض ملاحظة العتبة. تحقق دائماً من المنشور الرسمي.</p>
+        <section className="card">
+          <h3 className="mb-2 text-lg font-black">اختر الجامعة أولاً</h3>
+          <p className="text-slate-600 dark:text-slate-400">معدلات القبول مرتبطة بالجامعة والتخصص وشعبة البكالوريا والسنة. اختر الجامعة لعرض السجل التاريخي المتاح.</p>
+          {universities.length === 0 && <p className="mt-4 text-sm text-amber-700">لم تُضف جامعات لهذا التخصص بعد.</p>}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {universities.map((u) => (
+              <Link key={u.id} href={`/specialties/${s.slug}/${u.slug}`} className="rounded-2xl border border-slate-200/70 bg-white/60 p-4 font-bold transition hover:border-blue-400 dark:border-slate-700 dark:bg-slate-800/40">
+                {u.name_ar}<span className="mt-1 block text-xs font-normal text-slate-500">{[u.wilaya, u.city].filter(Boolean).join(" · ")}</span>
+              </Link>
+            ))}
+          </div>
         </section>
       ),
     },
     {
       id: "unis", label: "الجامعات",
-      content: regions.length ? (
-        <div className="grid gap-5 md:grid-cols-2">
-          {regions.map(({ region, items }) => (
-            <section key={region} className="card">
-              <h3 className="mb-3 flex items-center gap-2 text-lg font-black"><MapPin size={18} className="text-blue-600" aria-hidden />{region}</h3>
-              <ul className="flex flex-wrap gap-2">{items.map((u) => <li key={u} className="rounded-2xl bg-white/60 px-4 py-2 text-sm dark:bg-slate-800/50">{u}</li>)}</ul>
-            </section>
+      content: universities.length ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {universities.map((u) => (
+            <Link key={u.id} href={`/specialties/${s.slug}/${u.slug}`} className="card block transition hover:-translate-y-0.5">
+              <h3 className="font-black">{u.name_ar}</h3>
+              <p className="mt-1 text-sm text-slate-500">{[u.type, u.wilaya, u.city].filter(Boolean).join(" · ")}</p>
+              <span className="mt-3 inline-block text-sm font-bold text-blue-600">عرض معدلات القبول ←</span>
+            </Link>
           ))}
         </div>
-      ) : <p className="text-slate-600 dark:text-slate-400">لم تُسجَّل جامعات لهذا التخصص بعد.</p>,
+      ) : <p className="text-slate-600 dark:text-slate-400">لا توجد جامعات مرتبطة بهذا التخصص في قاعدة البيانات بعد.</p>,
     },
   ];
 

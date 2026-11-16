@@ -271,3 +271,133 @@ export async function deleteBacSeries(fd: FormData) {
   revalidatePath("/admin/series");
   revalidatePath("/bac");
 }
+
+/* ---------- إدارة الجامعات ومعدلات القبول حسب الجامعة ---------- */
+const validSlug = (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+const validHttpUrl = (value: string) => {
+  if (!value) return true;
+  try { return ["http:", "https:"].includes(new URL(value).protocol); } catch { return false; }
+};
+
+export async function saveUniversity(_: FormState, fd: FormData): Promise<FormState> {
+  const email = await requireAdmin();
+  const id = String(fd.get("id") ?? "").trim();
+  const slug = String(fd.get("slug") ?? "").trim().toLowerCase();
+  const name_ar = String(fd.get("name_ar") ?? "").trim();
+  const website_url = String(fd.get("website_url") ?? "").trim();
+  const latitudeRaw = String(fd.get("latitude") ?? "").trim();
+  const longitudeRaw = String(fd.get("longitude") ?? "").trim();
+  const latitude = latitudeRaw ? Number(latitudeRaw) : null;
+  const longitude = longitudeRaw ? Number(longitudeRaw) : null;
+  if ((id && !/^[0-9a-f-]{36}$/i.test(id)) || !validSlug(slug) || name_ar.length < 2 || name_ar.length > 180) return { error: "تحقق من المعرّف والاسم العربي للجامعة." };
+  if (!validHttpUrl(website_url)) return { error: "رابط الموقع الرسمي غير صالح." };
+  if ((latitude !== null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) || (longitude !== null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))) return { error: "إحداثيات الموقع غير صالحة." };
+  if ((latitude === null) !== (longitude === null)) return { error: "أدخل خط العرض وخط الطول معاً أو اتركهما فارغين." };
+  const row = {
+    slug, name_ar, name_fr: String(fd.get("name_fr") ?? "").trim() || null,
+    type: String(fd.get("type") ?? "").trim() || null,
+    wilaya: String(fd.get("wilaya") ?? "").trim() || null,
+    city: String(fd.get("city") ?? "").trim() || null,
+    address: String(fd.get("address") ?? "").trim() || null,
+    website_url: website_url || null, latitude, longitude,
+    description_ar: String(fd.get("description_ar") ?? "").trim() || null,
+    is_published: fd.get("is_published") === "on", updated_at: new Date().toISOString(),
+  };
+  const sb = adminClient();
+  const result = id
+    ? await sb.from("universities").update(row).eq("id", id).select("id").single()
+    : await sb.from("universities").insert(row).select("id").single();
+  const { data, error } = result;
+  if (error || !data) return { error: error?.message ?? "تعذر حفظ الجامعة." };
+  await log(email, id ? "university_update" : "university_create", slug);
+  revalidatePath("/admin/universities");
+  revalidatePath("/specialties", "layout");
+  redirect(`/admin/universities/${data.id}`);
+}
+
+export async function deleteUniversity(fd: FormData) {
+  const email = await requireAdmin();
+  const id = String(fd.get("id") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  const sb = adminClient();
+  const { data } = await sb.from("universities").select("slug").eq("id", id).maybeSingle();
+  if (!data) return;
+  const { error } = await sb.from("universities").delete().eq("id", id);
+  if (error) throw new Error(`تعذر حذف الجامعة: ${error.message}`);
+  await log(email, "university_delete", data.slug);
+  revalidatePath("/admin/universities");
+  revalidatePath("/specialties", "layout");
+  redirect("/admin/universities");
+}
+
+export async function saveUniversitySpecialty(fd: FormData) {
+  const email = await requireAdmin();
+  const university_id = String(fd.get("university_id") ?? "");
+  const specialty_slug = String(fd.get("specialty_slug") ?? "");
+  const faculty_name = String(fd.get("faculty_name") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(university_id) || !validSlug(specialty_slug)) throw new Error("بيانات الربط غير صالحة.");
+  const { error } = await adminClient().from("university_specialties").upsert({ university_id, specialty_slug, faculty_name: faculty_name || null, is_active: fd.get("is_active") === "on" }, { onConflict: "university_id,specialty_slug" });
+  if (error) throw new Error(`تعذر ربط التخصص بالجامعة: ${error.message}`);
+  await log(email, "university_specialty_save", `${university_id}:${specialty_slug}`);
+  revalidatePath("/admin/universities");
+  revalidatePath("/specialties", "layout");
+  revalidatePath(`/specialties/${specialty_slug}`);
+}
+
+export async function deleteUniversitySpecialty(fd: FormData) {
+  const email = await requireAdmin();
+  const id = Number(fd.get("id"));
+  const university_id = String(fd.get("university_id") ?? "");
+  if (!Number.isSafeInteger(id) || id <= 0 || !/^[0-9a-f-]{36}$/i.test(university_id)) return;
+  const { data } = await adminClient().from("university_specialties").select("specialty_slug").eq("id", id).eq("university_id", university_id).maybeSingle();
+  if (!data) return;
+  const { error } = await adminClient().from("university_specialties").delete().eq("id", id).eq("university_id", university_id);
+  if (error) throw new Error(error.message);
+  await log(email, "university_specialty_delete", `${university_id}:${data.specialty_slug}`);
+  revalidatePath(`/specialties/${data.specialty_slug}`);
+  revalidatePath("/admin/universities");
+}
+
+export async function saveAcceptanceRate(fd: FormData) {
+  const email = await requireAdmin();
+  const university_id = String(fd.get("university_id") ?? "");
+  const specialty_slug = String(fd.get("specialty_slug") ?? "");
+  const bac_branch = String(fd.get("bac_branch") ?? "").trim();
+  const year = Number(fd.get("year"));
+  const scoreRaw = String(fd.get("score") ?? "").trim().replace(",", ".");
+  const score = scoreRaw ? Number(scoreRaw) : null;
+  const source_url = String(fd.get("source_url") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(university_id) || !validSlug(specialty_slug) || bac_branch.length < 2 || bac_branch.length > 120) throw new Error("تحقق من الجامعة والتخصص والشعبة.");
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("السنة يجب أن تكون بين 2000 و2100.");
+  if (score !== null && (!Number.isFinite(score) || score < 0 || score > 20)) throw new Error("المعدل يجب أن يكون بين 0 و20، أو اتركه فارغاً إذا لم تتوفر القيمة.");
+  if (!validHttpUrl(source_url)) throw new Error("رابط المصدر غير صالح.");
+  if (fd.get("is_official") === "on" && !source_url) throw new Error("لا يمكن تصنيف السجل كمصدر رسمي دون إضافة رابط الوثيقة أو المصدر الرسمي.");
+  const sb = adminClient();
+  const { data: link } = await sb.from("university_specialties").select("id").eq("university_id", university_id).eq("specialty_slug", specialty_slug).maybeSingle();
+  if (!link) throw new Error("اربط هذا التخصص بالجامعة أولاً قبل إضافة معدل القبول.");
+  const { error } = await sb.from("acceptance_rates").upsert({
+    university_id, specialty_slug, bac_branch, year, score,
+    source_url: source_url || null,
+    source_title: String(fd.get("source_title") ?? "").trim() || null,
+    notes: String(fd.get("notes") ?? "").trim() || null,
+    is_official: fd.get("is_official") === "on",
+    verified_at: fd.get("is_official") === "on" ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "university_id,specialty_slug,bac_branch,year" });
+  if (error) throw new Error(`تعذر حفظ معدل القبول: ${error.message}`);
+  await log(email, "acceptance_rate_save", `${university_id}:${specialty_slug}:${bac_branch}:${year}`);
+  revalidatePath(`/specialties/${specialty_slug}`);
+  revalidatePath("/specialties", "layout");
+  revalidatePath("/admin/universities");
+}
+
+export async function deleteAcceptanceRate(fd: FormData) {
+  const email = await requireAdmin();
+  const id = Number(fd.get("id"));
+  const specialty_slug = String(fd.get("specialty_slug") ?? "");
+  if (!Number.isSafeInteger(id) || id <= 0 || !validSlug(specialty_slug)) return;
+  const { error } = await adminClient().from("acceptance_rates").delete().eq("id", id).eq("specialty_slug", specialty_slug);
+  if (error) throw new Error(`تعذر حذف سجل المعدل: ${error.message}`);
+  await log(email, "acceptance_rate_delete", `${specialty_slug}:${id}`);
+  revalidatePath(`/specialties/${specialty_slug}`);
+}
