@@ -39,7 +39,7 @@ export default function UniversitiesImportForm() {
       </div>
       {state.error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm leading-7 text-red-700 dark:bg-red-950 dark:text-red-300">{state.error}</p>}
       {state.ok && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">{state.ok}</p>}
-      <div><SubmitButton>رفع الجامعات والمعدلات</SubmitButton></div>
+      <div className="flex flex-wrap items-center gap-3"><SubmitButton>رفع الجامعات والمعدلات</SubmitButton><button type="submit" name="dry" value="1" className="btn-ghost" title="يتحقق من الملف ويعرض ما سيتغير دون حفظ أي شيء">معاينة بدون حفظ</button></div>
       <details className="rounded-2xl border border-slate-200/70 p-4 text-sm dark:border-slate-700/70">
         <summary className="cursor-pointer font-bold">شكل الملف المطلوب</summary>
         <pre dir="ltr" className="mt-3 overflow-x-auto rounded-xl bg-slate-900 p-4 text-left text-xs leading-6 text-slate-100">{sample}</pre>

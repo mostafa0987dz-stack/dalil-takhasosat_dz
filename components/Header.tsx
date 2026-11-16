@@ -10,6 +10,8 @@ const links = [
   ["التخصصات", "/specialties"],
   ["الشعب", "/bac"],
   ["حاسبة المعدل", "/calculator"],
+  ["الجامعات", "/universities"],
+  ["أين أقبل؟", "/finder"],
   ["عتبات القبول", "/seuils"],
   ["مقارنة", "/compare"],
 ] as const;
@@ -31,7 +33,7 @@ export default function Header() {
     try { localStorage.setItem("theme", value ? "dark" : "light"); } catch {}
   }
 
-  const labels = locale === "fr" ? ["Accueil", "Spécialités", "Séries du bac", "Calculateur", "Seuils", "Comparer"] : locale === "en" ? ["Home", "Specialties", "Bac streams", "Calculator", "Thresholds", "Compare"] : ["الرئيسية", "التخصصات", "الشعب", "حاسبة المعدل", "عتبات القبول", "مقارنة"];
+  const labels = locale === "fr" ? ["Accueil", "Spécialités", "Séries du bac", "Calculateur", "Universités", "Où être admis ?", "Seuils", "Comparer"] : locale === "en" ? ["Home", "Specialties", "Bac streams", "Calculator", "Universities", "Where can I get in?", "Thresholds", "Compare"] : ["الرئيسية", "التخصصات", "الشعب", "حاسبة المعدل", "الجامعات", "أين أقبل؟", "عتبات القبول", "مقارنة"];
   async function changeLocale(next: "ar"|"fr"|"en") {
     const response = await fetch("/api/locale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ locale: next }) });
     if (response.ok) { setLocale(next); window.location.reload(); }
@@ -46,7 +48,7 @@ export default function Header() {
         <Link href="/" className="text-lg font-black text-brand-700 dark:text-blue-400">
           {locale === "fr" ? "Guide des spécialités algériennes" : locale === "en" ? "Algerian University Guide" : <>دليل التخصصات <span className="text-slate-500">الجزائرية</span></>}
         </Link>
-        <nav aria-label="التنقل الرئيسي" className="hidden items-center gap-6 lg:flex">
+        <nav aria-label="التنقل الرئيسي" className="hidden items-center gap-4 xl:gap-6 lg:flex">
           {links.map(([, url], i) => (
             <Link key={url} href={url} className={linkCls(url)} aria-current={active(url) ? "page" : undefined}>{labels[i]}</Link>
           ))}

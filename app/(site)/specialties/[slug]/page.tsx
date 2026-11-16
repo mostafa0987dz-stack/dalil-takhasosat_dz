@@ -11,8 +11,9 @@ import ShareActions from "@/components/ShareActions";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import SpecialtyTabs from "@/components/SpecialtyTabs";
 import PrintSheet from "@/components/PrintSheet";
+import UniversityCards from "@/components/UniversityCards";
 import JsonLd from "@/components/JsonLd";
-import { ArrowLeft, GitCompare, MapPin } from "lucide-react";
+import { GitCompare } from "lucide-react";
 
 export const revalidate = 600;
 
@@ -110,15 +111,7 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
         <section>
           <p className="mb-4 max-w-3xl leading-8 text-slate-600 dark:text-slate-400">معدلات القبول مرتبطة بالجامعة وشعبة البكالوريا والسنة. اختر الجامعة لعرض جدول المعدلات ومصادره.</p>
           {universities.length ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {universities.map((u) => (
-                <Link key={u.id} href={`/specialties/${s.slug}/${u.slug}`} className="card card-hover group block">
-                  <h3 className="font-black group-hover:text-blue-600">{u.name_ar}</h3>
-                  <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500"><MapPin size={14} aria-hidden />{[u.type, u.wilaya, u.city].filter(Boolean).join(" · ") || "—"}</p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600">عرض معدلات القبول<ArrowLeft size={15} aria-hidden /></span>
-                </Link>
-              ))}
-            </div>
+            <UniversityCards items={universities} specialtySlug={s.slug} />
           ) : <p className="card text-slate-600 dark:text-slate-400">لم تُضف جامعات لهذا التخصص بعد.</p>}
         </section>
       ),

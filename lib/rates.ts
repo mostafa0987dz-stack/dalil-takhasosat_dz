@@ -9,3 +9,30 @@ export function pivotRates(rates: AcceptanceRate[]) {
 }
 
 export const fmtScore = (v: number | string | null | undefined): string => (v === null || v === undefined ? "—" : Number(v).toFixed(2));
+
+/** أحدث معدل غير فارغ لكل شعبة: [{branch, year, score}]. */
+export function latestPerBranch(rates: { bac_branch: string; year: number; score: number | null }[]) {
+  const best = new Map<string, { branch: string; year: number; score: number }>();
+  for (const r of rates) {
+    if (r.score === null) continue;
+    const cur = best.get(r.bac_branch);
+    if (!cur || r.year > cur.year) best.set(r.bac_branch, { branch: r.bac_branch, year: r.year, score: Number(r.score) });
+  }
+  return [...best.values()];
+}
+
+/** اتجاه شعبة: الفرق بين أحدث سنتين متوفرتين (موجب = ارتفع الحد الأدنى). */
+export function trendOf(points: { year: number; score: number | null }[]): { delta: number; from: number; to: number } | null {
+  const pts = points.filter((p) => p.score !== null).sort((a, b) => b.year - a.year);
+  if (pts.length < 2) return null;
+  return { delta: Math.round((Number(pts[0].score) - Number(pts[1].score)) * 100) / 100, from: pts[1].year, to: pts[0].year };
+}
+
+/** حداثة البيانات: تاريخ آخر تحديث، وهل مضى عليه أكثر من 18 شهراً. */
+export function freshness(dates: (string | null | undefined)[]): { label: string; stale: boolean } | null {
+  const times = dates.map((d) => (d ? new Date(d).getTime() : NaN)).filter((t) => Number.isFinite(t));
+  if (!times.length) return null;
+  const latest = Math.max(...times);
+  const months = (Date.now() - latest) / (1000 * 60 * 60 * 24 * 30.4);
+  return { label: new Date(latest).toLocaleDateString("ar-DZ", { year: "numeric", month: "long" }), stale: months > 18 };
+}

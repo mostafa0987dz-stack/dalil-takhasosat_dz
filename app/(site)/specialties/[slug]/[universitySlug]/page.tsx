@@ -3,11 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSpecialty } from "@/lib/data";
 import { getAcceptanceRates, getUniversityForSpecialty } from "@/lib/universities";
-import { fmtScore, pivotRates } from "@/lib/rates";
+import { fmtScore, freshness, pivotRates, trendOf } from "@/lib/rates";
+import Sparkline from "@/components/Sparkline";
 import { SITE_URL } from "@/lib/constants";
 import PrintSheet from "@/components/PrintSheet";
 import ShareActions from "@/components/ShareActions";
-import { ArrowRight, BadgeCheck, MapPin } from "lucide-react";
+import { AlertTriangle, ArrowRight, BadgeCheck, MapPin } from "lucide-react";
 
 export const revalidate = 900;
 
@@ -38,6 +39,7 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
   const latestScores = rates.filter((r) => r.year === latestYear && r.score !== null).map((r) => Number(r.score));
   const sourced = rates.filter((r) => r.source_url || r.notes);
   const printYears = years.slice(0, 6);
+  const fresh = freshness(rates.map((r) => r.updated_at));
   const pageUrl = `${SITE_URL}/specialties/${slug}/${universitySlug}`;
   const place = [university.type, university.wilaya, university.city].filter(Boolean).join(" · ");
 
@@ -78,6 +80,7 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
                 <thead><tr className="bg-white/50 dark:bg-slate-800/40">
                   <th scope="col" className="th text-right">شعبة البكالوريا</th>
                   {years.map((y) => <th key={y} scope="col" className="th">{y}</th>)}
+                  <th scope="col" className="th">الاتجاه</th>
                 </tr></thead>
                 <tbody>{branches.map((b) => (
                   <tr key={b} className="border-t border-slate-200/60 dark:border-slate-700/60">
@@ -86,13 +89,34 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
                       const r = get(b, y);
                       return <td key={y} className="p-4">{r ? <span className={`inline-flex items-center gap-1 font-bold ${r.score === null ? "text-slate-400" : ""}`}>{fmtScore(r.score)}{r.is_official && <BadgeCheck size={14} className="text-emerald-600" aria-label="مصدر رسمي" />}</span> : <span className="text-slate-300">·</span>}</td>;
                     })}
+                    {(() => {
+                      const pts = years.map((y) => ({ year: y, score: get(b, y)?.score ?? null }));
+                      const t = trendOf(pts);
+                      const series = pts.filter((p): p is { year: number; score: number } => p.score !== null).map((p) => ({ year: p.year, score: Number(p.score) }));
+                      return (
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-2">
+                            <Sparkline points={series} label={`تطور معدل ${b}`} />
+                            {t && <small className={`font-bold ${t.delta > 0 ? "text-rose-600" : t.delta < 0 ? "text-emerald-600" : "text-slate-500"}`} title={`مقارنة ${t.to} بـ ${t.from}`}>{t.delta > 0 ? "▲" : t.delta < 0 ? "▼" : "="} {Math.abs(t.delta).toFixed(2)}</small>}
+                          </span>
+                        </td>
+                      );
+                    })()}
                   </tr>
                 ))}</tbody>
               </table>
             </div>
           ) : <p className="rounded-2xl bg-slate-100/70 p-5 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">لم تُسجل معدلات قبول موثقة لهذه الجامعة وهذا التخصص بعد.</p>}
+          {rates.length > 1 && <p className="mt-3 text-xs text-slate-500">الاتجاه: الفرق بين أحدث سنتين متوفرتين. ▲ ارتفع الحد الأدنى (أصعب)، ▼ انخفض (أسهل).</p>}
           {rates.some((r) => r.is_official) && <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500"><BadgeCheck size={14} className="text-emerald-600" aria-hidden />تعني أن السجل مرتبط بمصدر رسمي موثق.</p>}
         </section>
+
+        {fresh && (
+          <p role="note" className={`mb-6 flex items-start gap-2 rounded-2xl p-4 text-sm leading-7 ${fresh.stale ? "bg-amber-50 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200" : "bg-slate-100/70 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300"}`}>
+            {fresh.stale && <AlertTriangle size={18} className="mt-1 shrink-0" aria-hidden />}
+            <span>آخر تحديث لهذه المعدلات: {fresh.label}.{fresh.stale ? " مضى أكثر من 18 شهراً؛ راجع المنشور الرسمي للجامعة قبل الاعتماد عليها." : ""}</span>
+          </p>
+        )}
 
         {sourced.length > 0 && (
           <details className="card mb-6">
@@ -111,7 +135,7 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
 
         {university.description_ar && <section className="card mb-6"><h2 className="mb-2 text-lg font-black">عن الجامعة</h2><p className="leading-8">{university.description_ar}</p></section>}
         {university.address && <p className="mb-4 text-sm text-slate-500">العنوان: {university.address}</p>}
-        <Link className="btn-ghost" href={`/specialties/${slug}`}><ArrowRight size={16} aria-hidden />العودة إلى التخصص واختيار جامعة أخرى</Link>
+        <div className="flex flex-wrap gap-3"><Link className="btn-ghost" href={`/specialties/${slug}`}><ArrowRight size={16} aria-hidden />التخصص واختيار جامعة أخرى</Link><Link className="btn-ghost" href={`/universities/${universitySlug}`}>كل تخصصات {university.name_ar}</Link></div>
       </div>
 
       <PrintSheet

@@ -8,7 +8,7 @@ import { adminClient } from "@/lib/supabase";
 import { validateSpecialty, type SpecialtyInput } from "@/lib/validate";
 import { csvToSpecialties } from "@/lib/csv";
 import { SERIE_NAMES } from "@/lib/constants";
-import { collectSpecialtySlugs, validateUniversities } from "@/lib/validate-universities";
+import { collectSpecialtySlugs, validateUniversities, type UniversitiesImport } from "@/lib/validate-universities";
 
 export type FormState = { error?: string; ok?: string };
 
@@ -401,6 +401,10 @@ export async function importUniversitiesJson(_: FormState, fd: FormData): Promis
   if (!res.ok) return { error: res.error };
 
   const replace = fd.get("replace") === "on";
+  if (fd.get("dry") === "1") {
+    try { return { ok: await previewUniversitiesImport(sb, res.value, replace) }; }
+    catch (e) { return { error: `تعذرت المعاينة: ${e instanceof Error ? e.message : "خطأ غير معروف"}` }; }
+  }
   const { universities, links, rates } = res.value;
   const { data, error } = await sb.rpc("import_universities_bundle", { p_universities: universities, p_links: links, p_rates: rates, p_replace: replace });
   if (error) {
@@ -413,4 +417,39 @@ export async function importUniversitiesJson(_: FormState, fd: FormData): Promis
   revalidatePath("/admin/universities", "layout");
   revalidatePath("/admin");
   return { ok: `تم الاستيراد: ${n.universities ?? universities.length} جامعة، ${n.links ?? links.length} ربط بتخصص، ${n.rates ?? rates.length} سجل معدل قبول.` };
+}
+
+/** معاينة بلا حفظ: كم جامعة/معدل جديد ومحدَّث وبلا تغيير (وكم سيُحذف في وضع الاستبدال). */
+async function previewUniversitiesImport(sb: ReturnType<typeof adminClient>, v: UniversitiesImport, replace: boolean): Promise<string> {
+  const idBySlug = new Map<string, string>();
+  const slugs = v.universities.map((u) => u.slug);
+  for (let i = 0; i < slugs.length; i += 150) {
+    const { data, error } = await sb.from("universities").select("id,slug").in("slug", slugs.slice(i, i + 150));
+    if (error) throw new Error(error.message);
+    for (const r of (data ?? []) as { id: string; slug: string }[]) idBySlug.set(r.slug, r.id);
+  }
+  const slugById = new Map([...idBySlug].map(([slug, id]) => [id, slug]));
+  const ids = [...idBySlug.values()];
+  const existing = new Map<string, number | null>();
+  for (let i = 0; i < ids.length; i += 100) {
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await sb.from("acceptance_rates").select("university_id,specialty_slug,bac_branch,year,score")
+        .in("university_id", ids.slice(i, i + 100)).order("id").range(from, from + 999);
+      if (error) throw new Error(error.message);
+      for (const r of (data ?? []) as any[]) existing.set(`${slugById.get(r.university_id)}|${r.specialty_slug}|${r.bac_branch}|${r.year}`, r.score === null ? null : Number(r.score));
+      if (!data || data.length < 1000) break;
+    }
+  }
+  let fresh = 0, changed = 0, same = 0;
+  const inFile = new Set<string>();
+  for (const r of v.rates) {
+    const key = `${r.university_slug}|${r.specialty_slug}|${r.bac_branch}|${r.year}`;
+    inFile.add(key);
+    if (!existing.has(key)) fresh++;
+    else if (existing.get(key) === r.score) same++;
+    else changed++;
+  }
+  const removed = replace ? [...existing.keys()].filter((k) => !inFile.has(k)).length : 0;
+  const newUnis = v.universities.filter((u) => !idBySlug.has(u.slug)).length;
+  return `معاينة فقط — لم يُحفظ شيء. الجامعات: ${newUnis} جديدة و${v.universities.length - newUnis} موجودة. روابط التخصصات: ${v.links.length}. المعدلات: ${fresh} جديدة، ${changed} ستتغير قيمتها، ${same} بلا تغيير${replace ? `، ${removed} ستُحذف (وضع الاستبدال)` : ""}. إن كانت الأرقام صحيحة اضغط «رفع الجامعات والمعدلات».`;
 }
