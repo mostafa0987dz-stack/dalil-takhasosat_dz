@@ -25,13 +25,20 @@ export async function getSpecialties(): Promise<Specialty[]> {
   if (!hasSupabase) return local as unknown as Specialty[];
   try {
     const sb = createClient(url!, anon!, { auth: { persistSession: false } });
-    const { data, error } = await sb
-      .from("specialties")
-      .select("*, thresholds(*)")
-      .eq("published", true)
-      .order("nom_ar");
-    if (error) throw error;
-    return (data ?? []).map(mapRow);
+    // جلب البيانات على دفعات من 1000 صف لتجاوز سقف PostgREST الافتراضي (1000 صف)
+    const rows: any[] = [];
+    for (let from = 0; from < 20000; from += 1000) {
+      const { data, error } = await sb
+        .from("specialties")
+        .select("*, thresholds(*)")
+        .eq("published", true)
+        .order("nom_ar")
+        .range(from, from + 999);
+      if (error) throw error;
+      rows.push(...(data ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    return rows.map(mapRow);
   } catch (e) {
     console.error("Supabase read failed, using local data", e);
     return local as unknown as Specialty[];

@@ -1,13 +1,27 @@
+import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import AdEvents from "@/components/AdEvents";
 import AdLink from "@/components/AdLink";
-import { getLocale } from "@/lib/i18n";
 
-export default async function AdSlot({ placement = "inline" }: { placement?: string }) {
+function detectDevice(ua: string): "mobile" | "desktop" {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua) ? "mobile" : "desktop";
+}
+
+export default async function AdSlot({
+  placement = "inline",
+  specialtySlug,
+}: {
+  placement?: string;
+  specialtySlug?: string;
+}) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
-  const locale = await getLocale();
+
+  const ua = (await headers()).get("user-agent") ?? "";
+  const device = detectDevice(ua);
+  const targetSlug = specialtySlug ?? "all";
+
   let data: { id: string; title: string; description: string; image_url: string | null; target_url: string } | null = null;
   try {
     const sb = createClient(url, key, { auth: { persistSession: false } });
@@ -15,7 +29,9 @@ export default async function AdSlot({ placement = "inline" }: { placement?: str
       .from("ads")
       .select("id,title,description,image_url,target_url")
       .eq("placement", placement)
-      .in("locale", ["all", locale]) // الإعلان له حقل لغة لكنه كان يُتجاهل
+      .in("locale", ["all", "ar"])
+      .in("device", ["all", device])
+      .in("specialty_slug", targetSlug === "all" ? ["all"] : ["all", targetSlug])
       .not("approved_at", "is", null)
       .order("created_at", { ascending: false })
       .limit(1)

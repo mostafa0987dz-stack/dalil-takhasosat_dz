@@ -50,7 +50,7 @@ export default function UniversityCards({ items, specialtySlug, withSearch = tru
       {showFilters && <p className="text-xs text-slate-500" aria-live="polite">{list.length} من {items.length} جامعة</p>}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((u) => (
-          <Link key={u.id} href={specialtySlug ? `/specialties/${specialtySlug}/${u.slug}` : `/universities/${u.slug}`} className="card card-hover group flex flex-col">
+          <Link key={u.id} prefetch={false} href={specialtySlug ? `/specialties/${specialtySlug}/${u.slug}` : `/universities/${u.slug}`} className="card card-hover group flex flex-col">
             <span className="mb-3 grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"><Building2 size={20} aria-hidden /></span>
             <h3 className="font-black group-hover:text-blue-600">{u.name_ar}</h3>
             {u.name_fr && <p dir="ltr" className="mt-0.5 text-right text-xs text-slate-500">{u.name_fr}</p>}

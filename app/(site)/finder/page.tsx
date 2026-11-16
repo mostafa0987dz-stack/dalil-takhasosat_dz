@@ -28,10 +28,10 @@ export default async function FinderPage({ searchParams }: Props) {
   const table = (rows: typeof results) => (
     <div className="table-wrap">
       <table className="w-full min-w-[32rem] text-right">
-        <thead><tr className="bg-white/50 dark:bg-slate-800/40"><th scope="col" className="th">التخصص</th><th scope="col" className="th">الجامعة</th><th scope="col" className="th">الولاية</th><th scope="col" className="th text-center">آخر معدل</th></tr></thead>
+        <thead><tr className="bg-white/50 dark:bg-slate-800/40"><th scope="col" className="th sticky right-0 z-10 bg-white/95 dark:bg-slate-900/95">التخصص</th><th scope="col" className="th">الجامعة</th><th scope="col" className="th">الولاية</th><th scope="col" className="th text-center">آخر معدل</th></tr></thead>
         <tbody>{rows.slice(0, MAX_ROWS).map((r) => (
           <tr key={`${r.university_slug}|${r.specialty_slug}`} className="border-t border-slate-200/60 dark:border-slate-700/60">
-            <td className="p-4 font-bold"><Link className="hover:text-blue-600" href={`/specialties/${r.specialty_slug}/${r.university_slug}`}>{r.specialty_name}</Link></td>
+            <td className="sticky right-0 z-10 bg-white/95 p-4 font-bold dark:bg-slate-900/95"><Link className="hover:text-blue-600" href={`/specialties/${r.specialty_slug}/${r.university_slug}`}>{r.specialty_name}</Link></td>
             <td className="p-4"><Link className="text-blue-600" href={`/universities/${r.university_slug}`}>{r.university_name}</Link></td>
             <td className="p-4 text-slate-500">{r.wilaya ?? "—"}</td>
             <td className="p-4 text-center font-bold">{r.score.toFixed(2)} <small className="font-normal text-slate-500">({r.year})</small></td>

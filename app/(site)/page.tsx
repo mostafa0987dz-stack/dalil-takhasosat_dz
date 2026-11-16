@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Calculator, GitCompare, ListChecks, type LucideIcon } from "lucide-react";
+import { BookOpen, Building2, Calculator, GitCompare, ListChecks, Search, type LucideIcon } from "lucide-react";
 import { getSpecialties } from "@/lib/data";
 import { hasDemo } from "@/lib/specialty";
 import { getBacSeries } from "@/lib/series";
@@ -8,18 +8,19 @@ import HeroSearch from "@/components/HeroSearch";
 import DomainIcon from "@/components/DomainIcon";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import AdSlot from "@/components/AdSlot";
-import { getLocale, messages } from "@/lib/i18n";
+import { messages } from "@/lib/i18n";
 
 export const revalidate = 600;
 
 export default async function Home() {
-  const locale = await getLocale();
-  const t = messages[locale];
+  const t = messages.ar;
   const tools: { t: string; d: string; u: string; Icon: LucideIcon }[] = [
     { t: t.calculator, d: t.calculatorDesc, u: "/calculator", Icon: Calculator },
     { t: t.thresholds, d: t.seuilDesc, u: "/seuils", Icon: ListChecks },
     { t: t.compare, d: t.compareDesc, u: "/compare", Icon: GitCompare },
     { t: t.series, d: t.seriesDesc, u: "/bac", Icon: BookOpen },
+    { t: "الجامعات", d: "تصفح الجامعات والتخصصات المتوفرة في كل منها ومعدلات القبول.", u: "/universities", Icon: Building2 },
+    { t: "أين أقبل؟", d: "أدخل شعبتك ومعدلك لتعرف التخصصات والجامعات المناسبة.", u: "/finder", Icon: Search },
   ];
   const [data, series] = await Promise.all([getSpecialties(), getBacSeries()]);
   const domains = Array.from(new Set(data.map((x) => x.domaine)));
@@ -32,15 +33,18 @@ export default async function Home() {
   
   return (
     <div>
-      <section className="relative z-30 overflow-visible bg-gradient-to-bl from-blue-950 via-blue-800 to-indigo-700 py-20 text-white">
-        <div aria-hidden className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-pink-300/20 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-24 right-10 h-72 w-72 rounded-full bg-teal-300/20 blur-3xl" />
+      <section className="relative z-30 overflow-visible bg-gradient-to-bl from-blue-950 via-blue-800 to-indigo-700 py-12 text-white sm:py-20">
+        {/* الزخارف داخل حاوية مقصوصة: لا تُنتج تمريراً أفقياً (كانت تُصغّر الصفحة في الهاتف) */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-pink-300/20 blur-3xl" />
+          <div className="absolute -bottom-24 right-10 h-72 w-72 rounded-full bg-teal-300/20 blur-3xl" />
+        </div>
         <div className="container-page relative z-10 grid items-center gap-10 md:grid-cols-2">
           <div>
             <span className="mb-4 inline-block rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm backdrop-blur">{t.heroTag}</span>
-            <h1 className="mb-5 text-4xl font-black leading-tight md:text-6xl">{t.heroTitle1}<br />{t.heroTitle2}</h1>
-            <p className="mb-8 max-w-xl leading-8 text-blue-100">{t.heroDesc}</p>
-            <HeroSearch locale={locale} items={data.map(({ slug, nom_ar, nom_fr, nom_en, tags }) => ({ slug, nom_ar, nom_fr, nom_en, tags }))} />
+            <h1 className="mb-4 text-3xl font-black leading-tight sm:mb-5 sm:text-4xl md:text-6xl">{t.heroTitle1}<br />{t.heroTitle2}</h1>
+            <p className="mb-6 max-w-xl leading-8 text-blue-100 sm:mb-8">{t.heroDesc}</p>
+            <HeroSearch />
           </div>
           <div className="hidden rounded-3xl border border-white/25 bg-white/10 p-8 shadow-2xl backdrop-blur-xl md:block">
             <div className="grid grid-cols-2 gap-4">
@@ -60,7 +64,7 @@ export default async function Home() {
         <p className="mb-2 text-sm font-bold text-blue-600">{t.start}</p>
         <h2 className="section-title mb-7">{t.toolsTitle}</h2>
         
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tools.map(({ t, d, u, Icon }, index) => {
             const colors = [
               { icon: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400", border: "hover:border-emerald-400 dark:hover:border-emerald-500/50" },
@@ -92,6 +96,13 @@ export default async function Home() {
               </Link>
             );
           })}
+        </div>
+      </section>
+
+      <section className="container-page pb-10" aria-labelledby="by-domain">
+        <h2 id="by-domain" className="section-title mb-5">تصفح حسب المجال</h2>
+        <div className="flex flex-wrap gap-2">
+          {domains.map((d) => <Link key={d} href={`/specialties?d=${encodeURIComponent(d)}`} prefetch={false} className="chip gap-2"><DomainIcon domaine={d} size={15} />{d}</Link>)}
         </div>
       </section>
 

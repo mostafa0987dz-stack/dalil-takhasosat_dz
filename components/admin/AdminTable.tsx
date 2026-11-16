@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Copy, ExternalLink, Pencil, Search } from "lucide-react";
 import { duplicateSpecialty, deleteSpecialty, togglePublish } from "@/app/admin/actions";
 import { norm } from "@/lib/text";
@@ -9,11 +9,15 @@ import ConfirmSubmit from "./ConfirmSubmit";
 export type AdminRow = { slug: string; nom_ar: string; domaine: string; published: boolean; updated_at: string; seuils: number; demo: boolean };
 type Sort = "updated" | "name" | "seuils";
 
+const PAGE = 25;
+
 export default function AdminTable({ rows }: { rows: AdminRow[] }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"" | "pub" | "draft" | "demo">("");
   const [domaine, setDomaine] = useState("");
   const [sort, setSort] = useState<Sort>("updated");
+  const [limit, setLimit] = useState(PAGE);
+  useEffect(() => setLimit(PAGE), [q, status, domaine, sort]);
   const domains = useMemo(() => Array.from(new Set(rows.map((r) => r.domaine))), [rows]);
   const fmt = (d: string) => new Date(d).toLocaleString("ar-DZ", { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Algiers" });
 
@@ -48,7 +52,7 @@ export default function AdminTable({ rows }: { rows: AdminRow[] }) {
         <table className="w-full min-w-[46rem] text-right">
           <thead className="bg-white/50 dark:bg-slate-800/40"><tr>{["التخصص", "المجال", "العتبات", "الحالة", "آخر تعديل", ""].map((h, i) => <th key={i} scope="col" className="th">{h}</th>)}</tr></thead>
           <tbody>
-            {list.map((r) => (
+            {list.slice(0, limit).map((r) => (
               <tr key={r.slug} className="border-t border-slate-200/60 dark:border-slate-700/60">
                 <td className="p-4 font-bold">{r.nom_ar}<div dir="ltr" className="text-right text-xs font-normal text-slate-500">{r.slug}</div></td>
                 <td className="p-4 text-sm">{r.domaine}</td>
@@ -73,6 +77,7 @@ export default function AdminTable({ rows }: { rows: AdminRow[] }) {
         </table>
         {!list.length && <p className="p-8 text-center text-slate-600 dark:text-slate-400">لا توجد نتائج مطابقة.</p>}
       </div>
+      {list.length > limit && <div className="mt-4 text-center"><button type="button" onClick={() => setLimit((n) => n + PAGE)} className="btn-ghost">عرض المزيد ({list.length - limit} متبقية)</button></div>}
     </div>
   );
 }

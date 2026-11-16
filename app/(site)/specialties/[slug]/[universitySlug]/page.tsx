@@ -78,13 +78,13 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
             <div className="table-wrap">
               <table className="w-full min-w-[28rem] text-center">
                 <thead><tr className="bg-white/50 dark:bg-slate-800/40">
-                  <th scope="col" className="th text-right">شعبة البكالوريا</th>
+                  <th scope="col" className="th sticky right-0 z-10 bg-white/95 text-right dark:bg-slate-900/95">شعبة البكالوريا</th>
                   {years.map((y) => <th key={y} scope="col" className="th">{y}</th>)}
                   <th scope="col" className="th">الاتجاه</th>
                 </tr></thead>
                 <tbody>{branches.map((b) => (
                   <tr key={b} className="border-t border-slate-200/60 dark:border-slate-700/60">
-                    <th scope="row" className="p-4 text-right font-bold">{b}</th>
+                    <th scope="row" className="sticky right-0 z-10 bg-white/95 p-4 text-right font-bold dark:bg-slate-900/95">{b}</th>
                     {years.map((y) => {
                       const r = get(b, y);
                       return <td key={y} className="p-4">{r ? <span className={`inline-flex items-center gap-1 font-bold ${r.score === null ? "text-slate-400" : ""}`}>{fmtScore(r.score)}{r.is_official && <BadgeCheck size={14} className="text-emerald-600" aria-label="مصدر رسمي" />}</span> : <span className="text-slate-300">·</span>}</td>;

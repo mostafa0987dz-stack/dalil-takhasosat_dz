@@ -5,11 +5,14 @@ import type { Specialty } from "@/types";
 import { norm } from "@/lib/text";
 import SpecialtyCard from "./SpecialtyCard";
 
+const PAGE = 12;
+
 export default function SpecialtiesClient({ items }: { items: Specialty[] }) {
   const sp = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [q, setQ] = useState(sp.get("q") ?? "");
+  const [limit, setLimit] = useState(PAGE);
   const d = sp.get("d") ?? "";
   const f = sp.get("f") ?? "";
   const c = sp.get("c") ?? "";
@@ -45,6 +48,8 @@ export default function SpecialtiesClient({ items }: { items: Specialty[] }) {
     );
   }, [items, q, d, f, c]);
 
+  useEffect(() => setLimit(PAGE), [q, d, f, c]);
+
   function reset() { spRef.current = ""; setQ(""); router.replace(pathname, { scroll: false }); }
 
   return (
@@ -71,7 +76,10 @@ export default function SpecialtiesClient({ items }: { items: Specialty[] }) {
       </div>
 
       <p className="mb-4 text-sm text-slate-600 dark:text-slate-400" aria-live="polite">النتائج: {filtered.length}</p>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((x) => <SpecialtyCard key={x.slug} item={x} />)}</div>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{filtered.slice(0, limit).map((x) => <SpecialtyCard key={x.slug} item={x} />)}</div>
+      {filtered.length > limit && (
+        <div className="mt-8 text-center"><button onClick={() => setLimit((n) => n + PAGE)} className="btn-ghost">عرض المزيد ({filtered.length - limit} متبقية)</button></div>
+      )}
       {!filtered.length && (
         <div className="py-16 text-center">
           <p className="mb-4 text-slate-600 dark:text-slate-400">لا توجد نتائج مطابقة.</p>

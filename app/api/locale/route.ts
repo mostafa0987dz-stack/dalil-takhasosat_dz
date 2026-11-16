@@ -1,3 +1,5 @@
+// FROZEN: multilingual UI disabled temporarily (see SITE_DOCUMENTATION).
+// To restore: re-enable getLocale() in app/layout.tsx and Header language selector.
 import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));

@@ -43,7 +43,7 @@ export default function UniversitySpecialties({ universitySlug, items, branches 
   const groups = grouped ? domains.filter((d) => rows.some((r) => r.i.domaine === d)) : [""];
 
   const card = (r: (typeof rows)[number]) => (
-    <Link key={r.i.slug} href={`/specialties/${r.i.slug}/${universitySlug}`} className="card card-hover group flex flex-col gap-2">
+    <Link key={r.i.slug} prefetch={false} href={`/specialties/${r.i.slug}/${universitySlug}`} className="card card-hover group flex flex-col gap-2">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-black group-hover:text-blue-600">{r.i.nom_ar}</h3>
         {personal && <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${BADGE[r.status].cls}`}>{BADGE[r.status].text}</span>}

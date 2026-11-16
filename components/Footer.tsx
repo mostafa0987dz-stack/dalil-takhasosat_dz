@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Facebook, Instagram, Twitter, Send, Mail, Phone } from "lucide-react";
-import { getLocale } from "@/lib/i18n";
 
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE;
@@ -11,10 +10,7 @@ const SOCIALS = [
   { label: "Twitter", href: process.env.NEXT_PUBLIC_SOCIAL_TWITTER, Icon: Twitter, hover: "hover:bg-slate-900" },
 ].flatMap(({ href, ...rest }) => (href ? [{ ...rest, href }] : []));
 
-export default async function Footer() {
-  const locale = await getLocale();
-  const fr = locale === "fr", en = locale === "en";
-  const copy = fr ? { intro:"Votre référence pour découvrir les spécialités universitaires algériennes, comparer les seuils et calculer votre moyenne pondérée.", quick:"Liens rapides", contact:"Contactez-nous", follow:"Suivez-nous", home:"Accueil", all:"Toutes les spécialités", calc:"Calculateur", seuil:"Seuils d’admission", compare:"Comparer", about:"À propos", privacy:"Confidentialité", note:"Les données sont indicatives ; la référence finale reste la publication du ministère." } : en ? { intro:"Your reference for exploring Algerian university majors, comparing admission thresholds and calculating your weighted average.", quick:"Quick links", contact:"Contact us", follow:"Follow us", home:"Home", all:"All specialties", calc:"Grade calculator", seuil:"Admission thresholds", compare:"Compare", about:"About", privacy:"Privacy", note:"Data is indicative; the final reference is the Ministry publication." } : { intro:"مرجعك الأول لاكتشاف التخصصات الجامعية الجزائرية، مقارنة العتبات، وحساب معدلك الموزون بكل سهولة.", quick:"روابط سريعة", contact:"تواصل معنا", follow:"تابعنا", home:"الرئيسية", all:"جميع التخصصات", calc:"حاسبة المعدل", seuil:"عتبات القبول", compare:"مقارنة التخصصات", about:"عن الدليل", privacy:"الخصوصية", note:"البيانات إرشادية؛ المرجع النهائي هو منشور وزارة التعليم العالي." };
+export default function Footer() {
   return (
     <footer className="no-print mt-20 border-t border-white/60 bg-white/50 py-12 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/50">
       <div className="container-page">
@@ -27,26 +23,26 @@ export default async function Footer() {
               دليل التخصصات
             </h3>
             <p className="text-sm leading-7 text-slate-600 dark:text-slate-400">
-              {copy.intro}
+              مرجعك الأول لاكتشاف التخصصات الجامعية الجزائرية، مقارنة العتبات، وحساب معدلك الموزون بكل سهولة.
             </p>
           </div>
 
           {/* 2. روابط سريعة */}
           <div>
-            <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.quick}</h4>
+            <h4 className="mb-4 font-bold text-slate-900 dark:text-white">روابط سريعة</h4>
             <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-              <li><Link href="/" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.home}</Link></li>
-              <li><Link href="/specialties" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.all}</Link></li>
-              <li><Link href="/calculator" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.calc}</Link></li>
-              <li><Link href="/seuils" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.seuil}</Link></li>
-              <li><Link href="/compare" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.compare}</Link></li>
+              <li><Link href="/" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">الرئيسية</Link></li>
+              <li><Link href="/specialties" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">جميع التخصصات</Link></li>
+              <li><Link href="/calculator" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">حاسبة المعدل</Link></li>
+              <li><Link href="/seuils" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">عتبات القبول</Link></li>
+              <li><Link href="/compare" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">مقارنة التخصصات</Link></li>
             </ul>
           </div>
 
           {/* 3. معلومات التواصل (تظهر فقط عند ضبطها في متغيرات البيئة) */}
           {(CONTACT_EMAIL || CONTACT_PHONE) && (
             <div>
-              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.contact}</h4>
+              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">تواصل معنا</h4>
               <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
                 {CONTACT_EMAIL && (
                   <li className="flex items-center gap-2">
@@ -67,7 +63,7 @@ export default async function Footer() {
           {/* 4. التواصل الاجتماعي (روابط حقيقية فقط) */}
           {SOCIALS.length > 0 && (
             <div>
-              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.follow}</h4>
+              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">تابعنا</h4>
               <div className="flex gap-3">
                 {SOCIALS.map(({ label, href, Icon, hover }) => (
                   <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer" className={`flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:-translate-y-1 hover:text-white dark:bg-slate-800 dark:text-slate-300 ${hover}`}>
@@ -84,12 +80,12 @@ export default async function Footer() {
           <p>© {new Date().getFullYear()} دليل التخصصات الجامعية الجزائرية. جميع الحقوق محفوظة.</p>
           
           <div className="flex gap-5">
-            <Link href="/about" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.about}</Link>
-            <Link href="/privacy" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.privacy}</Link>
+            <Link href="/about" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">عن الدليل</Link>
+            <Link href="/privacy" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">الخصوصية</Link>
           </div>
           
           <p className="text-center md:text-left">
-            {copy.note}
+            البيانات إرشادية؛ المرجع النهائي هو منشور وزارة التعليم العالي.
           </p>
         </div>
       </div>

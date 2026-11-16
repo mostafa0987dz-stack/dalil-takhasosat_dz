@@ -31,7 +31,7 @@ export default function SpecialtyTabs({ tabs }: { tabs: Tab[] }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="أقسام التخصص" className="no-print mb-6 flex gap-2 overflow-x-auto pb-1">
+      <div role="tablist" aria-label="أقسام التخصص" className="no-print sticky top-16 z-30 -mx-4 mb-6 flex gap-2 overflow-x-auto bg-slate-50/95 px-4 py-2 sm:mx-0 sm:rounded-2xl dark:bg-slate-950/95">
         {tabs.map((t, i) => (
           <button
             key={t.id} id={`tab-${t.id}`} role="tab" type="button"

@@ -27,7 +27,7 @@ export default function SpecialtyCard({ item, asPreview = false }: { item: Pick<
   const cls = "card card-hover flex h-full flex-col justify-between";
   return (
     <div className="group relative h-full">
-      {asPreview ? <div className={cls}>{inner}</div> : <Link href={`/specialties/${item.slug}`} className={cls}>{inner}</Link>}
+      {asPreview ? <div className={cls}>{inner}</div> : <Link href={`/specialties/${item.slug}`} prefetch={false} className={cls}>{inner}</Link>}
       {!asPreview && <FavoriteButton slug={item.slug} className="absolute left-3 top-3 z-10" />}
     </div>
   );
