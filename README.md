@@ -100,8 +100,8 @@ npm run deploy
 أو اربط مستودع GitHub في Cloudflare Workers Builds، واجعل أمر البناء `npm run deploy` وفق إعدادات OpenNext. لا تستخدم إعدادات Cloudflare Pages الثابتة (`next export`) لهذا المشروع؛ لأنه يعتمد على Server Components وServer Actions وواجهات API.
 
 ### ملاحظات توافق مهمة
-- تم رفع Next.js إلى إصدار 15.5.29 لأن دليل OpenNext الحالي لم يعد يدعم Next.js 14.
-- `wrangler.jsonc` يحدد Worker باسم `dalil-takhasosat-dz`؛ يمكن تغييره قبل أول نشر، ويجب أن يطابق اسم خدمة `WORKER_SELF_REFERENCE`.
+- تم رفع Next.js إلى إصدار 15.5.29 لأن دليل OpenNext الحالي لم يعد يدعم Next.js 14. يتطلب App Router في Next.js 15 إصدار React 19 كحد أدنى، لذلك أصبح المشروع على `react@^19.2.1` ويستخدم `useActionState` بدل `useFormState` المهمل.
+- `wrangler.jsonc` يحدد Worker باسم `dalil-takhasosat-dz-main`؛ يمكن تغييره قبل أول نشر، ويجب أن يطابق اسم خدمة `WORKER_SELF_REFERENCE`.
 - لا توجد بيانات اعتماد Cloudflare داخل المشروع. يلزم تسجيل الدخول إلى حسابك ثم تنفيذ `npm run deploy` لنشره فعلياً.
 - لم يتم تأكيد بناء Worker أو نشره من هذه البيئة؛ يجب تشغيل `npm install` ثم `npm run preview` أولاً، وبعد نجاح المعاينة تنفيذ `npm run deploy`.
 
@@ -118,3 +118,14 @@ After installing dependencies, run `npm run typecheck` and `npm run preview` bef
 لتفعيل إدارة شعب البكالوريا الجديدة، شغّل مرة واحدة ملف `supabase/migrations/20261116_admin_enhancements.sql` من Supabase SQL Editor. ينشئ جدول `bac_series` مع سياسات القراءة العامة للشعب النشطة، ويضيف الشعب الست الأساسية دون حذف بيانات سابقة. بعدها ستظهر صفحة «إدارة الشعب» في لوحة `/admin/series`.
 
 اختيار اللغة من شريط الموقع يحفظ اللغة في Cookie. تمت ترجمة شريط التنقل والصفحة الرئيسية وصفحات عرض الشعب إلى العربية والفرنسية والإنجليزية؛ أما بقية صفحات المحتوى فتحتاج استكمال ترجمتها قبل اعتبار تغطية اللغات كاملة.
+
+## مراجعة 16-11-2026: إصلاحات
+**نفّذ مرة واحدة في Supabase SQL Editor:** `supabase/migrations/20261118_specialty_enrichment_fields.sql`
+(كانت دالة `save_specialty_bundle` لا تحفظ `nom_en` و`description_fr` و`description_en` و`subjects` و`study_fields`؛ الملف يصلحها، وأُلحق أيضاً بنهاية `schema.sql`).
+
+- الشعب التي تضيفها من `/admin/series` أصبحت صالحة فعلاً داخل نموذج التخصص والاستيراد (كانت مقيّدة بست شعب ثابتة).
+- نموذج التخصص يتيح الآن تحرير الاسم الإنجليزي والوصف بالفرنسية والإنجليزية والمواد ومجالات الدراسة.
+- التذييل لا يعرض بريداً أو هاتفاً أو روابط وهمية؛ اضبطها عبر `NEXT_PUBLIC_CONTACT_EMAIL` و`NEXT_PUBLIC_CONTACT_PHONE` و`NEXT_PUBLIC_SOCIAL_*` (انظر `.env.example`).
+- الإعلان يحترم حقل `locale`، وصفحات الإدارة تعدّ أحداث الإعلانات على الخادم (حد PostgREST الافتراضي 1000 صف).
+- راجع `REVIEW_AR.md` لقائمة الإصلاحات الكاملة والاقتراحات.
+

@@ -7,6 +7,7 @@ import { COOKIE, allowedEmails, requireAdmin } from "@/lib/auth";
 import { adminClient } from "@/lib/supabase";
 import { validateSpecialty, type SpecialtyInput } from "@/lib/validate";
 import { csvToSpecialties } from "@/lib/csv";
+import { SERIE_NAMES } from "@/lib/constants";
 
 export type FormState = { error?: string; ok?: string };
 
@@ -53,6 +54,13 @@ async function persist(v: SpecialtyInput): Promise<string | null> {
   return error?.message ?? null;
 }
 
+/** أسماء كل الشعب المسموحة: الأساسية + ما أضافه المشرف (حتى المعطّل منها، كي لا تفشل تعديلات تخصصات قديمة). */
+async function allSeriesNames(): Promise<string[]> {
+  const { data } = await adminClient().from("bac_series").select("name_ar");
+  const extra = ((data ?? []) as { name_ar: string | null }[]).map((r) => r.name_ar ?? "").filter(Boolean);
+  return Array.from(new Set<string>([...SERIE_NAMES, ...extra]));
+}
+
 const refresh = () => revalidatePath("/", "layout");
 
 /* ---------- إضافة وتعديل تخصص ---------- */
@@ -74,8 +82,10 @@ export async function saveSpecialty(_: FormState, fd: FormData): Promise<FormSta
     diplome: fd.get("diplome"), duree: fd.get("duree"), description_ar: fd.get("description_ar"),
     filiere: fd.getAll("filiere"), competences: lines("competences"), debouches: lines("debouches"),
     universites: lines("universites"), tags: String(fd.get("tags") ?? "").split(/[,،]/),
+    nom_en: fd.get("nom_en"), description_fr: fd.get("description_fr"), description_en: fd.get("description_en"),
+    subjects: lines("subjects"), study_fields: lines("study_fields"),
     published: fd.get("published") === "on", seuils,
-  });
+  }, await allSeriesNames());
   if (!res.ok) return { error: res.error };
 
   if (isNew) {
@@ -137,8 +147,9 @@ export async function importJson(_: FormState, fd: FormData): Promise<FormState>
   if (data.length > 1000) return { error: "يمكن استيراد 1000 تخصص كحد أقصى في العملية الواحدة." };
   const publish = fd.get("publish") === "on";
   const values: SpecialtyInput[] = [];
+  const seriesNames = await allSeriesNames();
   for (let i = 0; i < data.length; i++) {
-    const res = validateSpecialty({ ...data[i], published: publish });
+    const res = validateSpecialty({ ...data[i], published: publish }, seriesNames);
     if (!res.ok) return { error: `العنصر رقم ${i + 1}: ${res.error}` };
     values.push(res.value);
   }
@@ -167,15 +178,17 @@ export async function duplicateSpecialty(fd: FormData) {
     if (!hit) break;
     next = `${slug}-copy-${n}`;
   }
-  const { thresholds, updated_at, ...row } = data as any;
-  const err = await persist({
+  const { thresholds, updated_at, created_at, ...row } = data as any;
+  const res = validateSpecialty({
     ...row,
     slug: next,
-    nom_ar: `${row.nom_ar} (نسخة)`,
+    nom_ar: `${row.nom_ar} (نسخة)`.slice(0, 180),
     published: false,
     seuils: (thresholds ?? []).map((t: any) => ({ serie: t.serie, annee: t.annee, moyenne: t.moyenne === null ? null : Number(t.moyenne), remarque: t.remarque, is_demo: t.is_demo })),
-  });
-  if (err) return;
+  }, await allSeriesNames());
+  if (!res.ok) throw new Error(`تعذر نسخ التخصص: ${res.error}`);
+  const err = await persist(res.value);
+  if (err) throw new Error(`تعذر نسخ التخصص: ${err}`);
   await log(email, "duplicate", `${slug} → ${next}`);
   refresh();
   redirect(`/admin/specialties/${next}`);
@@ -235,7 +248,9 @@ export async function saveSiteSettings(_: FormState, fd: FormData): Promise<Form
   await requireAdmin();
   const languages = fd.getAll("languages").map(String).filter(x => ["ar", "fr", "en"].includes(x));
   if (!languages.includes("ar")) return { error: "يجب إبقاء اللغة العربية مفعّلة." };
-  const value = { site_name: String(fd.get("site_name") ?? "").slice(0, 100), default_locale: String(fd.get("default_locale") ?? "ar"), enabled_locales: languages, ad_density: "balanced", ad_approval: "manual" };
+  const defaultLocale = String(fd.get("default_locale") ?? "ar");
+  if (!languages.includes(defaultLocale)) return { error: "اللغة الافتراضية يجب أن تكون ضمن اللغات المفعّلة." };
+  const value = { site_name: String(fd.get("site_name") ?? "").slice(0, 100), default_locale: defaultLocale, enabled_locales: languages, ad_density: "balanced", ad_approval: "manual" };
   const { error } = await adminClient().from("site_settings").upsert({ key: "general", value, updated_at: new Date().toISOString() });
   if (error) return { error: error.message };
   revalidatePath("/admin/settings");
@@ -354,7 +369,7 @@ export async function deleteUniversitySpecialty(fd: FormData) {
   const { error } = await adminClient().from("university_specialties").delete().eq("id", id).eq("university_id", university_id);
   if (error) throw new Error(error.message);
   await log(email, "university_specialty_delete", `${university_id}:${data.specialty_slug}`);
-  revalidatePath(`/specialties/${data.specialty_slug}`);
+  revalidatePath("/specialties", "layout");
   revalidatePath("/admin/universities");
 }
 
@@ -399,5 +414,6 @@ export async function deleteAcceptanceRate(fd: FormData) {
   const { error } = await adminClient().from("acceptance_rates").delete().eq("id", id).eq("specialty_slug", specialty_slug);
   if (error) throw new Error(`تعذر حذف سجل المعدل: ${error.message}`);
   await log(email, "acceptance_rate_delete", `${specialty_slug}:${id}`);
-  revalidatePath(`/specialties/${specialty_slug}`);
+  revalidatePath("/specialties", "layout");
+  revalidatePath("/admin/universities", "layout");
 }

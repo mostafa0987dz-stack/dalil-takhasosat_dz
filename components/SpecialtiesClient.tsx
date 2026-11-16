@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Specialty } from "@/types";
 import { norm } from "@/lib/text";
@@ -14,8 +14,12 @@ export default function SpecialtiesClient({ items }: { items: Specialty[] }) {
   const f = sp.get("f") ?? "";
   const c = sp.get("c") ?? "";
 
+  // نحتفظ بآخر قيمة للرابط: مؤقّت البحث (debounce) كان يقرأ نسخة قديمة فيُعيد الفلاتر بعد «مسح الفلاتر».
+  const spRef = useRef(sp.toString());
+  spRef.current = sp.toString();
+
   function setParam(k: string, v: string) {
-    const p = new URLSearchParams(sp.toString());
+    const p = new URLSearchParams(spRef.current);
     if (v) p.set(k, v); else p.delete(k);
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -23,7 +27,7 @@ export default function SpecialtiesClient({ items }: { items: Specialty[] }) {
 
   // مزامنة البحث النصي مع الرابط بعد توقف الكتابة
   useEffect(() => {
-    const t = setTimeout(() => { if ((sp.get("q") ?? "") !== q) setParam("q", q); }, 300);
+    const t = setTimeout(() => { if ((new URLSearchParams(spRef.current).get("q") ?? "") !== q) setParam("q", q); }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
@@ -36,12 +40,12 @@ export default function SpecialtiesClient({ items }: { items: Specialty[] }) {
     const n = norm(q);
     return items.filter(
       (x) =>
-        (!n || norm(`${x.nom_ar} ${x.nom_fr} ${x.description_ar} ${x.tags.join(" ")}`).includes(n)) &&
+        (!n || norm(`${x.nom_ar} ${x.nom_fr} ${x.nom_en ?? ""} ${x.description_ar} ${x.description_fr ?? ""} ${x.tags.join(" ")} ${(x.subjects ?? []).join(" ")}`).includes(n)) &&
         (!d || x.domaine === d) && (!f || x.filiere.includes(f)) && (!c || x.diplome === c),
     );
   }, [items, q, d, f, c]);
 
-  function reset() { setQ(""); router.replace(pathname, { scroll: false }); }
+  function reset() { spRef.current = ""; setQ(""); router.replace(pathname, { scroll: false }); }
 
   return (
     <section className="container-page py-12">

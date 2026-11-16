@@ -1,10 +1,10 @@
 "use client";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { saveUniversity, type FormState } from "@/app/admin/actions";
 import SubmitButton from "./SubmitButton";
 
 export default function UniversityForm({ initial }: { initial?: any }) {
-  const [state, action] = useFormState(saveUniversity, {} as FormState);
+  const [state, action] = useActionState(saveUniversity, {} as FormState);
   const item = initial ?? {};
   const field = (label: string, name: string, value: any, props: any = {}) => <label className="block text-sm font-bold">{label}<input name={name} defaultValue={value ?? ""} className="input mt-1" {...props}/></label>;
   return <form action={action} className="card space-y-4">

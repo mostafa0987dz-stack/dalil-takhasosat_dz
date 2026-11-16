@@ -15,7 +15,7 @@ export default function AdminTable({ rows }: { rows: AdminRow[] }) {
   const [domaine, setDomaine] = useState("");
   const [sort, setSort] = useState<Sort>("updated");
   const domains = useMemo(() => Array.from(new Set(rows.map((r) => r.domaine))), [rows]);
-  const fmt = (d: string) => new Date(d).toLocaleString("ar-DZ", { dateStyle: "short", timeStyle: "short" });
+  const fmt = (d: string) => new Date(d).toLocaleString("ar-DZ", { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Algiers" });
 
   const list = useMemo(() => {
     const n = norm(q);

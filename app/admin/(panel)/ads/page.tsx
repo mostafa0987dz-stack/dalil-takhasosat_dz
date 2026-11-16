@@ -7,12 +7,14 @@ export const dynamic = "force-dynamic";
 export default async function AdsPage() {
   await requireAdmin();
   const sb = adminClient();
-  const [{ data: campaigns, error }, { data: events }] = await Promise.all([
+  const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const count = (type: string) => sb.from("ad_events").select("id", { count: "exact", head: true }).eq("event_type", type).gte("event_day", since);
+  const [{ data: campaigns, error }, impRes, clickRes] = await Promise.all([
     sb.from("ad_campaigns").select("id,name,source,status,monthly_price,currency,created_at").order("created_at", { ascending: false }).limit(100),
-    sb.from("ad_events").select("event_type").gte("event_day", new Date(Date.now()-30*86400000).toISOString().slice(0,10)),
+    count("impression"), count("click"),
   ]);
-  const impressions = (events ?? []).filter(x => x.event_type === "impression").length;
-  const clicks = (events ?? []).filter(x => x.event_type === "click").length;
+  const impressions = impRes.count ?? 0;
+  const clicks = clickRes.count ?? 0;
   return <div className="space-y-7"><div><h1 className="section-title">إدارة الإعلانات</h1><p className="mt-2 text-sm text-slate-500">Direct وAdSense والإعلانات التعليمية الممولة. النشر يتطلب موافقة إدارية.</p></div>
     <div className="grid gap-3 sm:grid-cols-3"><div className="card"><p className="text-sm text-slate-500">الحملات</p><b className="text-3xl">{campaigns?.length ?? 0}</b></div><div className="card"><p className="text-sm text-slate-500">مرات الظهور · 30 يوماً</p><b className="text-3xl">{impressions}</b></div><div className="card"><p className="text-sm text-slate-500">النقرات · 30 يوماً</p><b className="text-3xl">{clicks}</b><p className="text-xs text-slate-400">CTR: {impressions ? (clicks/impressions*100).toFixed(2) : "0.00"}%</p></div></div>
     <section className="card space-y-4"><h2 className="text-xl font-black">إضافة إعلان / حملة</h2><AdCampaignForm /></section>

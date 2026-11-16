@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, CircleAlert, CircleX, Calculator } from "lucide-react";
 import type { Specialty } from "@/types";
-import { FORMULAS, specialtyMatchesField, weighted } from "@/lib/formulas";
-import { seuilFor } from "@/lib/specialty";
+import { DOMAIN_TO_FIELDS, FORMULAS, specialtyMatchesField, weighted } from "@/lib/formulas";
+import { hasDemo, seuilFor } from "@/lib/specialty";
+import DemoNotice from "./DemoNotice";
 
 type Status = "ok" | "near" | "low" | "na";
 const STATUS: Record<Status, { label: string; cls: string; Icon: typeof CheckCircle2 }> = {
@@ -21,7 +22,13 @@ export default function CalculatorClient({ items }: { items: Specialty[] }) {
   const series = Object.keys(FORMULAS);
 
   const [serie, setSerie] = useState(() => (preset?.filiere.find((f) => FORMULAS[f]) ?? series[0]));
-  const [field, setField] = useState(() => Object.keys(FORMULAS[preset?.filiere.find((f) => FORMULAS[f]) ?? series[0]])[0]);
+  // عند القدوم من صفحة تخصص نختار الميدان الموافق لمجاله بدل أول ميدان في القائمة.
+  const [field, setField] = useState(() => {
+    const s0 = preset?.filiere.find((f) => FORMULAS[f]) ?? series[0];
+    const keys = Object.keys(FORMULAS[s0]);
+    const wanted = preset ? DOMAIN_TO_FIELDS[preset.domaine] ?? [] : [];
+    return keys.find((k) => wanted.includes(k)) ?? keys[0];
+  });
   const [chosen, setChosen] = useState(preset?.slug ?? "");
   const [marks, setMarks] = useState<Record<string, string>>({});
 
@@ -33,7 +40,7 @@ export default function CalculatorClient({ items }: { items: Specialty[] }) {
   function changeSerie(s: string) {
     setSerie(s);
     setField(Object.keys(FORMULAS[s])[0]);
-    setMarks({});
+    setChosen(""); // التخصص المحدد قد لا ينتمي للشعبة الجديدة فيظهر خيار غير موجود وقائمة فارغة
   }
 
   const list = useMemo(
@@ -56,6 +63,7 @@ export default function CalculatorClient({ items }: { items: Specialty[] }) {
       <h1 className="section-title mb-3">حاسبة المعدل الموزون</h1>
       <p className="mb-8 text-slate-600 dark:text-slate-400">اختر شعبتك والميدان، وأدخل العلامات المطلوبة فقط. تُحسب النتيجة عند اكتمال كل العلامات.</p>
 
+      {hasDemo(items) && <DemoNotice />}
       <div className="card grid gap-5 p-6">
         <label className="font-bold">شعبة البكالوريا
           <select className="input mt-2 font-bold" value={serie} onChange={(e) => changeSerie(e.target.value)}>
@@ -63,7 +71,7 @@ export default function CalculatorClient({ items }: { items: Specialty[] }) {
           </select>
         </label>
         <label className="font-bold">الميدان المراد التسجيل فيه
-          <select className="input mt-2 font-bold" value={field} onChange={(e) => { setField(e.target.value); setMarks({}); }}>
+          <select className="input mt-2 font-bold" value={field} onChange={(e) => { setField(e.target.value); setChosen(""); }}>
             {fields.map((x) => <option key={x}>{x}</option>)}
           </select>
         </label>
@@ -86,7 +94,7 @@ export default function CalculatorClient({ items }: { items: Specialty[] }) {
         <label className="font-bold">تخصص محدد للمقارنة (اختياري)
           <select className="input mt-2" value={chosen} onChange={(e) => setChosen(e.target.value)}>
             <option value="">كل التخصصات المناسبة للميدان</option>
-            {items.filter((s) => s.filiere.includes(serie)).map((x) => <option value={x.slug} key={x.slug}>{x.nom_ar}</option>)}
+            {items.filter((s) => s.filiere.includes(serie) && specialtyMatchesField(s, field)).map((x) => <option value={x.slug} key={x.slug}>{x.nom_ar}</option>)}
           </select>
         </label>
 

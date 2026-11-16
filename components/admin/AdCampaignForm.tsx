@@ -1,13 +1,13 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { createAdCampaign, type FormState } from "@/app/admin/actions";
 import SubmitButton from "./SubmitButton";
 
 const initialState: FormState = {};
 
 export default function AdCampaignForm() {
-  const [state, action] = useFormState(createAdCampaign, initialState);
+  const [state, action] = useActionState(createAdCampaign, initialState);
 
   return (
     <form action={action} className="grid gap-3 md:grid-cols-2">

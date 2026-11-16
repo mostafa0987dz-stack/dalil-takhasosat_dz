@@ -1,12 +1,12 @@
 "use client";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { loginAction, type FormState } from "@/app/admin/actions";
 import SubmitButton from "./SubmitButton";
 
 const initial: FormState = {};
 
 export default function LoginForm() {
-  const [state, action] = useFormState(loginAction, initial);
+  const [state, action] = useActionState(loginAction, initial);
   return (
     <form action={action} className="card grid gap-4 p-6">
       <label className="text-sm font-bold">البريد الإلكتروني

@@ -1,10 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useEffect, useRef, useState } from "react";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import { saveSpecialty, type FormState } from "@/app/admin/actions";
-import { SERIE_NAMES } from "@/lib/constants";
 import SubmitButton from "./SubmitButton";
 
 const initialState: FormState = {};
@@ -19,8 +18,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-export default function SpecialtyForm({ isNew, initial, domains }: { isNew: boolean; initial: any; domains: string[] }) {
-  const [state, action] = useFormState(saveSpecialty, initialState);
+export default function SpecialtyForm({ isNew, initial, domains, series }: { isNew: boolean; initial: any; domains: string[]; series: string[] }) {
+  const [state, action] = useActionState(saveSpecialty, initialState);
   const i = initial ?? {};
   const seuils: any[] = i.thresholds ?? [];
   const seuilsText = seuils.map((t) => `${t.serie} | ${t.annee} | ${t.moyenne ?? ""} | ${t.remarque ?? ""}`).join("\n");
@@ -61,10 +60,22 @@ export default function SpecialtyForm({ isNew, initial, domains }: { isNew: bool
 
       <Field label="الوصف"><textarea name="description_ar" required rows={4} defaultValue={i.description_ar} className="input" /></Field>
 
+      <details className="rounded-2xl border border-slate-200/70 p-4 dark:border-slate-700/70" open={Boolean(i.nom_en || i.description_fr || i.description_en)}>
+        <summary className="cursor-pointer text-sm font-bold">المحتوى متعدد اللغات والإثراء (اختياري)</summary>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Field label="الاسم بالإنجليزية"><input name="nom_en" dir="ltr" defaultValue={i.nom_en ?? ""} className="input" /></Field>
+          <span />
+          <Field label="الوصف بالفرنسية"><textarea name="description_fr" dir="ltr" rows={4} defaultValue={i.description_fr ?? ""} className="input" /></Field>
+          <Field label="الوصف بالإنجليزية"><textarea name="description_en" dir="ltr" rows={4} defaultValue={i.description_en ?? ""} className="input" /></Field>
+          <Field label="المواد الدراسية" hint="سطر لكل مادة"><textarea name="subjects" rows={4} defaultValue={join(i.subjects)} className="input" /></Field>
+          <Field label="مجالات الدراسة" hint="سطر لكل عنصر"><textarea name="study_fields" rows={4} defaultValue={join(i.study_fields)} className="input" /></Field>
+        </div>
+      </details>
+
       <fieldset>
         <legend className="mb-2 text-sm font-bold">الشعب المؤهلة</legend>
         <div className="flex flex-wrap gap-3">
-          {SERIE_NAMES.map((s) => (
+          {series.map((s) => (
             <label key={s} className="flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700">
               <input type="checkbox" name="filiere" value={s} defaultChecked={(i.filiere ?? []).includes(s)} />{s}
             </label>

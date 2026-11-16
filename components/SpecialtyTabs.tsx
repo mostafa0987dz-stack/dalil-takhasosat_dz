@@ -19,8 +19,9 @@ export default function SpecialtyTabs({ tabs }: { tabs: Tab[] }) {
   }
 
   function onKey(e: KeyboardEvent, i: number) {
-    // RTL: السهم الأيسر = التالي
-    const dir = e.key === "ArrowLeft" ? 1 : e.key === "ArrowRight" ? -1 : 0;
+    // RTL: السهم الأيسر = التالي، وLTR (الفرنسية/الإنجليزية): العكس
+    const rtl = document.documentElement.dir === "rtl";
+    const dir = e.key === "ArrowLeft" ? (rtl ? 1 : -1) : e.key === "ArrowRight" ? (rtl ? -1 : 1) : 0;
     if (!dir) return;
     e.preventDefault();
     const next = tabs[(i + dir + tabs.length) % tabs.length];

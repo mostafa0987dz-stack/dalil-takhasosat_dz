@@ -9,7 +9,7 @@ const clean = (s: string) => s.replace(/[;|]/g, "،").replace(/\s+/g, " ").trim(
 
 function cell(v: string): string {
   // حماية من حقن الصيغ عند فتح الملف في Excel
-  const safe = /^[=+@]/.test(v) ? `'${v}` : v;
+  const safe = /^[=+@\-\t\r]/.test(v) ? `'${v}` : v;
   return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
@@ -58,7 +58,7 @@ export function csvToSpecialties(text: string): any[] {
   const idx = (k: string) => head.map((h) => h.trim()).indexOf(k);
   const get = (r: string[], k: string) => {
     const v = (r[idx(k)] ?? "").trim();
-    return /^'[=+@]/.test(v) ? v.slice(1) : v;
+    return /^'[=+@\-\t\r]/.test(v) ? v.slice(1) : v;
   };
   const list = (r: string[], k: string) => get(r, k).split(";").map((s) => s.trim()).filter(Boolean);
   return body.map((r) => ({

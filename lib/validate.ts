@@ -4,6 +4,7 @@ export type SeuilInput = { serie: string; annee: number; moyenne: number | null;
 export type SpecialtyInput = {
   slug: string; nom_ar: string; nom_fr: string; domaine: string; diplome: string; duree: string; description_ar: string;
   filiere: string[]; competences: string[]; debouches: string[]; universites: string[]; tags: string[];
+  nom_en: string; description_fr: string; description_en: string; subjects: string[]; study_fields: string[];
   published: boolean; seuils: SeuilInput[];
 };
 type Result = { ok: true; value: SpecialtyInput } | { ok: false; error: string };
@@ -14,7 +15,8 @@ const list = (v: unknown, maxItems = 100, maxLength = 180): string[] => {
 };
 const fail = (error: string): Result => ({ ok: false, error });
 
-export function validateSpecialty(raw: unknown): Result {
+/** allowedSeries: أسماء الشعب المسموحة (تشمل الشعب التي يضيفها المشرف من لوحة الإدارة). */
+export function validateSpecialty(raw: unknown, allowedSeries: readonly string[] = SERIE_NAMES): Result {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return fail("بيانات التخصص غير صالحة.");
   const r = raw as Record<string, unknown>;
   const slug = text(r.slug, 90).toLowerCase();
@@ -26,7 +28,7 @@ export function validateSpecialty(raw: unknown): Result {
   }
   const filiere = list(r.filiere, 6, 80);
   if (!filiere.length) return fail("اختر شعبة واحدة على الأقل.");
-  const badSerie = filiere.find(x => !SERIE_NAMES.includes(x));
+  const badSerie = filiere.find(x => !allowedSeries.includes(x));
   if (badSerie) return fail(`شعبة غير معروفة: ${badSerie}`);
   if (r.seuils !== undefined && !Array.isArray(r.seuils)) return fail("قائمة العتبات غير صالحة.");
   const inputSeuils = Array.isArray(r.seuils) ? r.seuils : [];
@@ -37,8 +39,8 @@ export function validateSpecialty(raw: unknown): Result {
     if (!item || typeof item !== "object" || Array.isArray(item)) return fail("إحدى العتبات غير صالحة.");
     const t = item as Record<string, unknown>;
     const serie = text(t.serie, 80), annee = Number(t.annee);
-    const m = t.moyenne === null || t.moyenne === undefined || t.moyenne === "" ? null : Number(t.moyenne);
-    if (!SERIE_NAMES.includes(serie)) return fail(`شعبة غير معروفة في العتبات: ${serie || "فارغة"}`);
+    const m = t.moyenne === null || t.moyenne === undefined || t.moyenne === "" ? null : Number(typeof t.moyenne === "string" ? t.moyenne.replace(",", ".") : t.moyenne);
+    if (!allowedSeries.includes(serie)) return fail(`شعبة غير معروفة في العتبات: ${serie || "فارغة"}`);
     if (!Number.isInteger(annee) || annee < 2000 || annee > 2100) return fail(`سنة غير صالحة في عتبة ${serie}.`);
     if (m !== null && (!Number.isFinite(m) || m < 0 || m > 20)) return fail(`المعدل يجب أن يكون بين 0 و20 (${serie}).`);
     const key = `${serie}|${annee}`;
@@ -50,6 +52,8 @@ export function validateSpecialty(raw: unknown): Result {
     slug, nom_ar: text(r.nom_ar, 180), nom_fr: text(r.nom_fr, 180), domaine: text(r.domaine, 120),
     diplome: text(r.diplome, 120), duree: text(r.duree, 80), description_ar: text(r.description_ar, 5000), filiere,
     competences: list(r.competences), debouches: list(r.debouches), universites: list(r.universites), tags: list(r.tags, 40, 60),
+    nom_en: text(r.nom_en, 180), description_fr: text(r.description_fr, 5000), description_en: text(r.description_en, 5000),
+    subjects: list(r.subjects, 60, 120), study_fields: list(r.study_fields, 60, 120),
     published: r.published === true, seuils,
   }};
 }

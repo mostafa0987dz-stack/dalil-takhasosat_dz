@@ -1,12 +1,12 @@
 "use client";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { importJson, type FormState } from "@/app/admin/actions";
 import SubmitButton from "./SubmitButton";
 
 const initial: FormState = {};
 
 export default function ImportForm() {
-  const [state, action] = useFormState(importJson, initial);
+  const [state, action] = useActionState(importJson, initial);
   return (
     <form action={action} className="card grid gap-4 p-6">
       <label className="text-sm font-bold">ملف JSON أو CSV<input type="file" name="file" accept="application/json,.json,text/csv,.csv" className="input mt-2" /></label>

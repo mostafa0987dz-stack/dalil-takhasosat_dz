@@ -27,10 +27,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  const { error } = await adminClient().rpc("record_ad_event", {
-    p_ad_id: adId,
-    p_event_type: eventType,
-  });
-  if (error) return new NextResponse(null, { status: 204 });
-  return NextResponse.json({ ok: true }, { status: 202 });
+  try {
+    const { error } = await adminClient().rpc("record_ad_event", {
+      p_ad_id: adId,
+      p_event_type: eventType,
+    });
+    if (error) return new NextResponse(null, { status: 204 });
+    return NextResponse.json({ ok: true }, { status: 202 });
+  } catch {
+    // غياب إعدادات Supabase أو عطل مؤقت: لا نُسقط الصفحة ولا نُرجع 500 لمجرد تتبع.
+    return new NextResponse(null, { status: 204 });
+  }
 }

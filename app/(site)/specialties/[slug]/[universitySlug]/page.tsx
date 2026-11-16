@@ -32,7 +32,7 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
   const years = Array.from(new Set(rates.map((r) => r.year))).sort((a, b) => a - b);
 
   return (
-    <main className="container-page max-w-5xl py-12">
+    <div className="container-page max-w-5xl py-12">
       <nav className="mb-6 flex flex-wrap gap-2 text-sm text-blue-600">
         <Link href="/specialties">التخصصات</Link><span>/</span>
         <Link href={`/specialties/${slug}`}>{specialty.nom_ar}</Link><span>/</span>
@@ -56,7 +56,7 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
               <tbody>{rates.map((r) => (
                 <tr key={r.id} className="border-t border-slate-200/60 dark:border-slate-700/60">
                   <td className="p-4">{r.bac_branch}</td><td className="p-4">{r.year}</td>
-                  <td className="p-4 font-bold">{r.score === null ? "غير متوفر" : `${r.score.toFixed(2)} / 20`}</td>
+                  <td className="p-4 font-bold">{r.score === null ? "غير متوفر" : `${Number(r.score).toFixed(2)} / 20`}</td>
                   <td className="p-4 text-sm">{r.source_url ? <a className="text-blue-600 underline" href={r.source_url} target="_blank" rel="noopener noreferrer">{r.source_title || "عرض المصدر"}</a> : <span className="text-slate-400">لا يوجد مصدر مسجل</span>}{r.is_official && <span className="mr-2 text-xs text-emerald-700">رسمي</span>}{r.notes && <p className="mt-1 text-xs text-slate-500">{r.notes}</p>}</td>
                 </tr>
               ))}</tbody>
@@ -68,6 +68,6 @@ export default async function UniversitySpecialtyPage({ params }: Props) {
       {university.description_ar && <section className="card mb-6"><h2 className="mb-2 text-lg font-black">عن الجامعة</h2><p className="leading-8">{university.description_ar}</p></section>}
       {university.address && <p className="mb-4 text-sm text-slate-500">العنوان: {university.address}</p>}
       <Link className="btn-ghost" href={`/specialties/${slug}`}>العودة إلى التخصص واختيار جامعة أخرى</Link>
-    </main>
+    </div>
   );
 }

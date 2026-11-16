@@ -6,6 +6,7 @@ import FavoriteButton from "./FavoriteButton";
 
 export default function SpecialtyCard({ item, asPreview = false }: { item: Pick<Specialty, "slug" | "nom_ar" | "nom_fr" | "domaine" | "description_ar" | "diplome" | "duree" | "seuils">; asPreview?: boolean }) {
   const min = minSeuil(item as Specialty);
+  const allDemo = item.seuils.length > 0 && item.seuils.every((x) => x.demo);
   const inner = (
     <>
       <div>
@@ -19,7 +20,7 @@ export default function SpecialtyCard({ item, asPreview = false }: { item: Pick<
       </div>
       <div className="mt-auto flex items-center justify-between border-t border-slate-200/60 pt-4 text-xs text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
         <span className="font-medium">{item.diplome} · {item.duree}</span>
-        {min !== null && <span className="rounded-xl bg-blue-100/70 px-2.5 py-1 font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">من {min.toFixed(2)}</span>}
+        {min !== null && <span className="rounded-xl bg-blue-100/70 px-2.5 py-1 font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">من {min.toFixed(2)}{allDemo && <span className="mr-1 font-normal opacity-80">(تجريبي)</span>}</span>}
       </div>
     </>
   );

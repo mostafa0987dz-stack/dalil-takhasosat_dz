@@ -5,7 +5,10 @@ const KEY = "fav-specialties";
 const EVT = "fav-change";
 
 function read(): string[] {
-  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+  try {
+    const v = JSON.parse(localStorage.getItem(KEY) || "[]");
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch { return []; }
 }
 
 export function useFavorites() {

@@ -1,53 +1,35 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export default function AnimatedNumber({ value, duration = 2000 }: { value: number; duration?: number }) {
-  const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
-  const elementRef = useRef<HTMLSpanElement>(null);
+/** عدّاد متحرك عند ظهوره في الشاشة. يعرض القيمة النهائية عند عدم دعم الحركة أو عند تفضيل تقليلها. */
+export default function AnimatedNumber({ value, duration = 1600 }: { value: number; duration?: number }) {
+  const [count, setCount] = useState(value); // القيمة النهائية أولاً: تظهر للزواحف ولمن عطّل JavaScript
+  const ref = useRef<HTMLSpanElement>(null);
+  const done = useRef(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-          
-          const startTime = Date.now();
-          const endTime = startTime + duration;
+    const el = ref.current;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (!el || reduce || typeof IntersectionObserver === "undefined") { setCount(value); return; }
 
-          const animate = () => {
-            const now = Date.now();
-            const progress = Math.min((now - startTime) / duration, 1); // نسبة التقدم من 0 إلى 1
+    let raf = 0;
+    setCount(0);
+    done.current = false;
+    const run = () => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / duration, 1);
+        setCount(Math.min(value, Math.floor((1 - Math.pow(1 - p, 3)) * value)));
+        if (p < 1) raf = requestAnimationFrame(tick); else setCount(value);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && !done.current) { done.current = true; io.disconnect(); run(); }
+    }, { threshold: 0.1 });
+    io.observe(el);
+    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+  }, [value, duration]);
 
-            // حساب القيمة الحالية باستخدام دالة تباطؤ آمنة
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            let current = Math.floor(easeOut * value);
-
-            // حماية إضافية لمنع الأرقام السالبة أو التي تتجاوز القيمة النهائية
-            if (current < 0) current = 0;
-            if (current > value) current = value;
-
-            setCount(current);
-
-            if (now < endTime) {
-              requestAnimationFrame(animate);
-            } else {
-              setCount(value); // تأكيد الوصول للرقم النهائي
-            }
-          };
-
-          requestAnimationFrame(animate);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (elementRef.current) {
-      observer.observe(elementRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [value, duration, hasAnimated]);
-
-  return <span ref={elementRef}>{count}</span>;
+  return <span ref={ref} aria-label={String(value)}>{count}</span>;
 }

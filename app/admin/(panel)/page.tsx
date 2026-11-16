@@ -39,7 +39,7 @@ export default async function Dashboard() {
   const published = rows.filter((r) => r.published).length;
   const domains = new Set(rows.map((r) => r.domaine)).size;
   const demoCount = thr.filter((t) => t.is_demo).length;
-  const fmt = (d: string) => new Date(d).toLocaleString("ar-DZ", { dateStyle: "short", timeStyle: "short" });
+  const fmt = (d: string) => new Date(d).toLocaleString("ar-DZ", { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Algiers" });
 
   const kpis = [
     { l: "إجمالي التخصصات", v: rows.length, Icon: Layers, c: "text-blue-600 bg-blue-100/70 dark:bg-blue-950/60" },

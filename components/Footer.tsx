@@ -1,6 +1,15 @@
 import Link from "next/link";
-import { Facebook, Instagram, Twitter, Send, Mail, Phone, MapPin } from "lucide-react";
+import { Facebook, Instagram, Twitter, Send, Mail, Phone } from "lucide-react";
 import { getLocale } from "@/lib/i18n";
+
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE;
+const SOCIALS = [
+  { label: "Facebook", href: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK, Icon: Facebook, hover: "hover:bg-blue-600" },
+  { label: "Instagram", href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM, Icon: Instagram, hover: "hover:bg-pink-600" },
+  { label: "Telegram", href: process.env.NEXT_PUBLIC_SOCIAL_TELEGRAM, Icon: Send, hover: "hover:bg-sky-500" },
+  { label: "Twitter", href: process.env.NEXT_PUBLIC_SOCIAL_TWITTER, Icon: Twitter, hover: "hover:bg-slate-900" },
+].flatMap(({ href, ...rest }) => (href ? [{ ...rest, href }] : []));
 
 export default async function Footer() {
   const locale = await getLocale();
@@ -34,43 +43,40 @@ export default async function Footer() {
             </ul>
           </div>
 
-          {/* 3. معلومات التواصل */}
-          <div>
-            <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.contact}</h4>
-            <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-              <li className="flex items-center gap-2">
-                <Mail size={16} className="text-blue-600 dark:text-blue-400" />
-                <a href="mailto:contact@example.com" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">contact@example.com</a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone size={16} className="text-blue-600 dark:text-blue-400" />
-                <a href="tel:+213000000000" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400" dir="ltr">+213 (0) 000 00 00 00</a>
-              </li>
-              <li className="flex items-center gap-2">
-                <MapPin size={16} className="text-blue-600 dark:text-blue-400" />
-                <span>الجزائر العاصمة، الجزائر</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* 4. التواصل الاجتماعي */}
-          <div>
-            <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.follow}</h4>
-            <div className="flex gap-3">
-              <a href="#" aria-label="Facebook" className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:-translate-y-1 hover:bg-blue-600 hover:text-white dark:bg-slate-800 dark:text-slate-300">
-                <Facebook size={18} />
-              </a>
-              <a href="#" aria-label="Instagram" className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:-translate-y-1 hover:bg-pink-600 hover:text-white dark:bg-slate-800 dark:text-slate-300">
-                <Instagram size={18} />
-              </a>
-              <a href="#" aria-label="Telegram" className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:-translate-y-1 hover:bg-sky-500 hover:text-white dark:bg-slate-800 dark:text-slate-300">
-                <Send size={18} />
-              </a>
-              <a href="#" aria-label="Twitter" className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:-translate-y-1 hover:bg-slate-900 hover:text-white dark:bg-slate-800 dark:text-slate-300">
-                <Twitter size={18} />
-              </a>
+          {/* 3. معلومات التواصل (تظهر فقط عند ضبطها في متغيرات البيئة) */}
+          {(CONTACT_EMAIL || CONTACT_PHONE) && (
+            <div>
+              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.contact}</h4>
+              <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+                {CONTACT_EMAIL && (
+                  <li className="flex items-center gap-2">
+                    <Mail size={16} className="text-blue-600 dark:text-blue-400" />
+                    <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{CONTACT_EMAIL}</a>
+                  </li>
+                )}
+                {CONTACT_PHONE && (
+                  <li className="flex items-center gap-2">
+                    <Phone size={16} className="text-blue-600 dark:text-blue-400" />
+                    <a href={`tel:${CONTACT_PHONE.replace(/[^+\d]/g, "")}`} className="transition-colors hover:text-blue-600 dark:hover:text-blue-400" dir="ltr">{CONTACT_PHONE}</a>
+                  </li>
+                )}
+              </ul>
             </div>
-          </div>
+          )}
+
+          {/* 4. التواصل الاجتماعي (روابط حقيقية فقط) */}
+          {SOCIALS.length > 0 && (
+            <div>
+              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.follow}</h4>
+              <div className="flex gap-3">
+                {SOCIALS.map(({ label, href, Icon, hover }) => (
+                  <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer" className={`flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:-translate-y-1 hover:text-white dark:bg-slate-800 dark:text-slate-300 ${hover}`}>
+                    <Icon size={18} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* القسم السفلي: الحقوق والملاحظات */}
