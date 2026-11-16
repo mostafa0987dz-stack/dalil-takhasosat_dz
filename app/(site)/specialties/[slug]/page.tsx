@@ -11,6 +11,7 @@ import ShareActions from "@/components/ShareActions";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import SpecialtyTabs from "@/components/SpecialtyTabs";
 import JsonLd from "@/components/JsonLd";
+import { GitCompare } from "lucide-react";
 
 export const revalidate = 600;
 
