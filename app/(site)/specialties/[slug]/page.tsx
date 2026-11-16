@@ -10,8 +10,9 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ShareActions from "@/components/ShareActions";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import SpecialtyTabs from "@/components/SpecialtyTabs";
+import PrintSheet from "@/components/PrintSheet";
 import JsonLd from "@/components/JsonLd";
-import { GitCompare } from "lucide-react";
+import { ArrowLeft, GitCompare, MapPin } from "lucide-react";
 
 export const revalidate = 600;
 
@@ -104,35 +105,23 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
       ),
     },
     {
-      id: "seuils", label: "معدلات القبول",
+      id: "unis", label: `الجامعات ومعدلات القبول${universities.length ? ` (${universities.length})` : ""}`,
       content: (
-        <section className="card">
-          <h3 className="mb-2 text-lg font-black">اختر الجامعة أولاً</h3>
-          <p className="text-slate-600 dark:text-slate-400">معدلات القبول مرتبطة بالجامعة والتخصص وشعبة البكالوريا والسنة. اختر الجامعة لعرض السجل التاريخي المتاح.</p>
-          {universities.length === 0 && <p className="mt-4 text-sm text-amber-700">لم تُضف جامعات لهذا التخصص بعد.</p>}
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {universities.map((u) => (
-              <Link key={u.id} href={`/specialties/${s.slug}/${u.slug}`} className="rounded-2xl border border-slate-200/70 bg-white/60 p-4 font-bold transition hover:border-blue-400 dark:border-slate-700 dark:bg-slate-800/40">
-                {u.name_ar}<span className="mt-1 block text-xs font-normal text-slate-500">{[u.wilaya, u.city].filter(Boolean).join(" · ")}</span>
-              </Link>
-            ))}
-          </div>
+        <section>
+          <p className="mb-4 max-w-3xl leading-8 text-slate-600 dark:text-slate-400">معدلات القبول مرتبطة بالجامعة وشعبة البكالوريا والسنة. اختر الجامعة لعرض جدول المعدلات ومصادره.</p>
+          {universities.length ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {universities.map((u) => (
+                <Link key={u.id} href={`/specialties/${s.slug}/${u.slug}`} className="card card-hover group block">
+                  <h3 className="font-black group-hover:text-blue-600">{u.name_ar}</h3>
+                  <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500"><MapPin size={14} aria-hidden />{[u.type, u.wilaya, u.city].filter(Boolean).join(" · ") || "—"}</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600">عرض معدلات القبول<ArrowLeft size={15} aria-hidden /></span>
+                </Link>
+              ))}
+            </div>
+          ) : <p className="card text-slate-600 dark:text-slate-400">لم تُضف جامعات لهذا التخصص بعد.</p>}
         </section>
       ),
-    },
-    {
-      id: "unis", label: "الجامعات",
-      content: universities.length ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {universities.map((u) => (
-            <Link key={u.id} href={`/specialties/${s.slug}/${u.slug}`} className="card block transition hover:-translate-y-0.5">
-              <h3 className="font-black">{u.name_ar}</h3>
-              <p className="mt-1 text-sm text-slate-500">{[u.type, u.wilaya, u.city].filter(Boolean).join(" · ")}</p>
-              <span className="mt-3 inline-block text-sm font-bold text-blue-600">عرض معدلات القبول ←</span>
-            </Link>
-          ))}
-        </div>
-      ) : <p className="text-slate-600 dark:text-slate-400">لا توجد جامعات مرتبطة بهذا التخصص في قاعدة البيانات بعد.</p>,
     },
   ];
 
@@ -144,8 +133,9 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
   }
 
   return (
-    <article className="container-page max-w-5xl py-12">
+    <article className="container-page print-article max-w-5xl py-12">
       <JsonLd data={jsonLd} />
+      <div className="no-print">
 
       <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link href="/specialties" className="text-sm font-bold text-blue-600">← العودة إلى التخصصات</Link>
@@ -168,7 +158,24 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
         <Link href={`/compare?s=${s.slug}`} className="btn-ghost"><GitCompare size={16} />قارن مع تخصصات أخرى</Link>
       </div>
 
-      <p className="print-only mt-6 text-xs">المصدر: {pageUrl} — البيانات إرشادية؛ المرجع النهائي منشور وزارة التعليم العالي.</p>
+      </div>
+
+      <PrintSheet
+        title={s.nom_ar}
+        subtitle={s.nom_fr || undefined}
+        facts={[
+          { label: "المجال", value: s.domaine },
+          { label: "الشهادة", value: s.diplome },
+          { label: "المدة", value: s.duree },
+          { label: "الشعب المؤهلة", value: s.filiere.join("، ") },
+        ]}
+        lists={[
+          { title: "المهارات المكتسبة", items: s.competences, max: 6 },
+          { title: "آفاق التوظيف", items: s.debouches, max: 6 },
+          { title: "الجامعات", items: universities.map((u) => [u.name_ar, u.wilaya].filter(Boolean).join(" — ")), max: 12 },
+        ]}
+        url={pageUrl}
+      />
     </article>
   );
 }

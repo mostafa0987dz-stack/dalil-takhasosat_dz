@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { FileDown, Link2, MessageCircle, Printer, Send } from "lucide-react";
+import { Link2, MessageCircle, Printer, Send } from "lucide-react";
 
 export default function ShareActions({ title }: { title: string }) {
   const [copied, setCopied] = useState(false);
@@ -24,8 +24,7 @@ export default function ShareActions({ title }: { title: string }) {
       <button onClick={whatsapp} className="btn-ghost hover:!text-emerald-600"><MessageCircle size={16} />واتساب</button>
       <button onClick={telegram} className="btn-ghost hover:!text-sky-600"><Send size={16} />تيليجرام</button>
       <button onClick={copy} className="btn-ghost"><Link2 size={16} />{copied ? "تم نسخ الرابط" : "نسخ الرابط"}</button>
-      <button onClick={() => window.print()} className="btn-ghost"><Printer size={16} />طباعة</button>
-      <button onClick={() => window.print()} className="btn-ghost" title="في نافذة الطباعة اختر «حفظ بصيغة PDF»"><FileDown size={16} />حفظ PDF</button>
+      <button onClick={() => window.print()} className="btn-ghost" title="ورقة مختصرة بالمعلومات المهمة. في نافذة الطباعة اختر «حفظ بصيغة PDF» لحفظها كملف."><Printer size={16} />طباعة / PDF</button>
     </div>
   );
 }

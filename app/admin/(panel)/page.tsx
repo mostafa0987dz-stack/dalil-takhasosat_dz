@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookCheck, FileEdit, FlaskConical, Layers, ListChecks, Download } from "lucide-react";
+import { BookCheck, Building2, FileEdit, FileUp, FlaskConical, Layers, ListChecks, Download, Percent } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { adminClient } from "@/lib/supabase";
 import AdminTable, { type AdminRow } from "@/components/admin/AdminTable";
@@ -12,13 +12,15 @@ export default async function Dashboard() {
   const sb = adminClient();
   const sinceDate = new Date(); sinceDate.setHours(0,0,0,0); sinceDate.setDate(sinceDate.getDate()-29);
   const since = sinceDate.toISOString();
-  const [rowsRes, logsRes, thrRes, eventsRes, campaignsRes, activityRes] = await Promise.all([
+  const [rowsRes, logsRes, thrRes, eventsRes, campaignsRes, activityRes, uniCountRes, rateCountRes] = await Promise.all([
     sb.from("specialties").select("slug,nom_ar,domaine,published,updated_at").order("updated_at", { ascending: false }),
     sb.from("audit_log").select("*").order("created_at", { ascending: false }).limit(10),
     sb.from("thresholds").select("specialty_slug,is_demo"),
     sb.from("ad_events").select("event_type,event_day").gte("event_day", since.slice(0, 10)).limit(10000),
     sb.from("ad_campaigns").select("id,status"),
     sb.from("audit_log").select("created_at").gte("created_at", since).limit(10000),
+    sb.from("universities").select("id", { count: "exact", head: true }),
+    sb.from("acceptance_rates").select("id", { count: "exact", head: true }),
   ]);
   const base = (rowsRes.data ?? []) as any[];
   const logs = (logsRes.data ?? []) as any[];
@@ -48,6 +50,8 @@ export default async function Dashboard() {
     { l: "عتبات مسجلة", v: thr.length, Icon: ListChecks, c: "text-violet-600 bg-violet-100/70 dark:bg-violet-950/60" },
     { l: "عتبات تجريبية", v: demoCount, Icon: FlaskConical, c: "text-amber-600 bg-amber-100/70 dark:bg-amber-950/60" },
     { l: "مجالات", v: domains, Icon: Layers, c: "text-rose-600 bg-rose-100/70 dark:bg-rose-950/60" },
+    { l: "جامعات", v: uniCountRes.count ?? 0, Icon: Building2, c: "text-sky-600 bg-sky-100/70 dark:bg-sky-950/60" },
+    { l: "سجلات معدلات القبول", v: rateCountRes.count ?? 0, Icon: Percent, c: "text-teal-600 bg-teal-100/70 dark:bg-teal-950/60" },
     { l: "حملات بانتظار المراجعة", v: pendingCampaigns, Icon: FlaskConical, c: "text-orange-600 bg-orange-100/70 dark:bg-orange-950/60" },
   ];
 
@@ -56,16 +60,17 @@ export default async function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="section-title">لوحة التحكم</h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">إدارة التخصصات والعتبات والاستيراد/التصدير.</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">نظرة سريعة على المحتوى والجامعات والإعلانات.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href="/admin/export?format=json" className="btn-ghost"><Download size={14} />JSON</a>
+          <Link href="/admin/import#universities" className="btn-ghost"><FileUp size={14} />رفع جامعات ومعدلات</Link>
+          <a href="/admin/export?format=json" className="btn-ghost"><Download size={14} />تخصصات JSON</a>
           <a href="/admin/export?format=csv" className="btn-ghost"><Download size={14} />CSV</a>
           <Link href="/admin/specialties/new" className="btn-primary !py-2">+ تخصص جديد</Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map(({ l, v, Icon, c }) => (
           <div key={l} className="card !p-4">
             <span className={`mb-3 inline-flex rounded-2xl p-2.5 ${c}`}><Icon size={18} aria-hidden /></span>

@@ -1,27 +1,44 @@
 import Link from "next/link";
+import { FileUp } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { adminClient } from "@/lib/supabase";
 import UniversityForm from "@/components/admin/UniversityForm";
+import UniversitiesList, { type UniversityRowView } from "@/components/admin/UniversitiesList";
 
 export const dynamic = "force-dynamic";
 
+const count = (v: any): number => (Array.isArray(v) && typeof v[0]?.count === "number" ? v[0].count : 0);
+
 export default async function UniversitiesAdminPage() {
   await requireAdmin();
-  const sb = adminClient();
-  const [universitiesRes, ratesRes, linksRes] = await Promise.all([
-    sb.from("universities").select("id,slug,name_ar,wilaya,city,is_published,updated_at").order("name_ar"),
-    sb.from("acceptance_rates").select("id"),
-    sb.from("university_specialties").select("id"),
-  ]);
-  const universities: any[] = universitiesRes.data ?? [];
+  const { data, error } = await adminClient()
+    .from("universities")
+    .select("id,slug,name_ar,type,wilaya,city,is_published,university_specialties(count),acceptance_rates(count)")
+    .order("name_ar");
+  const rows: UniversityRowView[] = ((data ?? []) as any[]).map((u) => ({
+    id: u.id, slug: u.slug, name_ar: u.name_ar, type: u.type, wilaya: u.wilaya, city: u.city, is_published: u.is_published,
+    specialties: count(u.university_specialties), rates: count(u.acceptance_rates),
+  }));
+  const totalRates = rows.reduce((n, r) => n + r.rates, 0);
+
   return <div className="space-y-6">
-    <header><h1 className="section-title">إدارة الجامعات</h1><p className="mt-2 text-sm text-slate-500">أضف الجامعات، اربط كل جامعة بالتخصصات التي تدرّسها، ثم أدخل معدلات القبول حسب الشعبة والسنة مع المصدر. سجل السنوات مفتوح دون حد أقصى.</p></header>
-    {universitiesRes.error ? <div role="alert" className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">تعذر تحميل الجامعات. تأكد من تنفيذ migration الخاصة بالجامعات في Supabase. التفاصيل: {universitiesRes.error.message}</div> : null}
-    <div className="grid gap-3 sm:grid-cols-3"><div className="card"><b className="text-2xl">{universities.length}</b><p className="text-sm text-slate-500">جامعة مسجلة</p></div><div className="card"><b className="text-2xl">{linksRes.data?.length ?? 0}</b><p className="text-sm text-slate-500">ربط جامعة بتخصص</p></div><div className="card"><b className="text-2xl">{ratesRes.data?.length ?? 0}</b><p className="text-sm text-slate-500">سجل معدل قبول</p></div></div>
-    <section className="space-y-3"><h2 className="text-xl font-black">الجامعات المسجلة</h2>
-      {universities.map((u) => <Link key={u.id} href={`/admin/universities/${u.id}`} className="card flex flex-wrap items-center justify-between gap-3 transition hover:border-blue-300"><span><b>{u.name_ar}</b><span className="mr-2 text-xs text-slate-500">{[u.wilaya,u.city].filter(Boolean).join(" · ")}</span><span className="mt-1 block text-xs text-slate-400" dir="ltr">{u.slug}</span></span><span className={`rounded-full px-3 py-1 text-xs font-bold ${u.is_published ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{u.is_published ? "منشورة" : "مسودة"}</span></Link>)}
-      {!universities.length && !universitiesRes.error && <p className="card text-sm text-slate-500">لا توجد جامعات مسجلة بعد.</p>}
-    </section>
-    <section><h2 className="mb-3 text-xl font-black">إضافة جامعة</h2><UniversityForm/></section>
+    <header className="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 className="section-title">الجامعات</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">تُرفع الجامعات ومعدلات القبول دفعة واحدة من ملف JSON. من هنا تعدّل بيانات كل جامعة وتربطها بالتخصصات.</p>
+      </div>
+      <Link href="/admin/import#universities" className="btn-primary"><FileUp size={16} />رفع ملف JSON</Link>
+    </header>
+    {error ? <div role="alert" className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">تعذر تحميل الجامعات. تأكد من تنفيذ migration الخاصة بالجامعات في Supabase. التفاصيل: {error.message}</div> : null}
+    <div className="grid gap-3 sm:grid-cols-3">
+      <div className="card"><b className="text-3xl">{rows.length}</b><p className="text-sm text-slate-500">جامعة مسجلة</p></div>
+      <div className="card"><b className="text-3xl">{rows.filter((r) => r.is_published).length}</b><p className="text-sm text-slate-500">منشورة للزوار</p></div>
+      <div className="card"><b className="text-3xl">{totalRates}</b><p className="text-sm text-slate-500">سجل معدل قبول</p></div>
+    </div>
+    {rows.length ? <UniversitiesList rows={rows} /> : !error && <p className="card text-sm text-slate-500">لا توجد جامعات بعد. ارفع ملف JSON أو أضف جامعة يدوياً.</p>}
+    <details className="card">
+      <summary className="cursor-pointer text-lg font-black">إضافة جامعة يدوياً</summary>
+      <div className="mt-4"><UniversityForm/></div>
+    </details>
   </div>;
 }

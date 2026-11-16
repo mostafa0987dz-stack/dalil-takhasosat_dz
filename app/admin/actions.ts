@@ -8,6 +8,7 @@ import { adminClient } from "@/lib/supabase";
 import { validateSpecialty, type SpecialtyInput } from "@/lib/validate";
 import { csvToSpecialties } from "@/lib/csv";
 import { SERIE_NAMES } from "@/lib/constants";
+import { collectSpecialtySlugs, validateUniversities } from "@/lib/validate-universities";
 
 export type FormState = { error?: string; ok?: string };
 
@@ -373,47 +374,43 @@ export async function deleteUniversitySpecialty(fd: FormData) {
   revalidatePath("/admin/universities");
 }
 
-export async function saveAcceptanceRate(fd: FormData) {
+/* ---------- رفع الجامعات ومعدلات القبول من ملف JSON ---------- */
+export async function importUniversitiesJson(_: FormState, fd: FormData): Promise<FormState> {
   const email = await requireAdmin();
-  const university_id = String(fd.get("university_id") ?? "");
-  const specialty_slug = String(fd.get("specialty_slug") ?? "");
-  const bac_branch = String(fd.get("bac_branch") ?? "").trim();
-  const year = Number(fd.get("year"));
-  const scoreRaw = String(fd.get("score") ?? "").trim().replace(",", ".");
-  const score = scoreRaw ? Number(scoreRaw) : null;
-  const source_url = String(fd.get("source_url") ?? "").trim();
-  if (!/^[0-9a-f-]{36}$/i.test(university_id) || !validSlug(specialty_slug) || bac_branch.length < 2 || bac_branch.length > 120) throw new Error("تحقق من الجامعة والتخصص والشعبة.");
-  if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("السنة يجب أن تكون بين 2000 و2100.");
-  if (score !== null && (!Number.isFinite(score) || score < 0 || score > 20)) throw new Error("المعدل يجب أن يكون بين 0 و20، أو اتركه فارغاً إذا لم تتوفر القيمة.");
-  if (!validHttpUrl(source_url)) throw new Error("رابط المصدر غير صالح.");
-  if (fd.get("is_official") === "on" && !source_url) throw new Error("لا يمكن تصنيف السجل كمصدر رسمي دون إضافة رابط الوثيقة أو المصدر الرسمي.");
-  const sb = adminClient();
-  const { data: link } = await sb.from("university_specialties").select("id").eq("university_id", university_id).eq("specialty_slug", specialty_slug).maybeSingle();
-  if (!link) throw new Error("اربط هذا التخصص بالجامعة أولاً قبل إضافة معدل القبول.");
-  const { error } = await sb.from("acceptance_rates").upsert({
-    university_id, specialty_slug, bac_branch, year, score,
-    source_url: source_url || null,
-    source_title: String(fd.get("source_title") ?? "").trim() || null,
-    notes: String(fd.get("notes") ?? "").trim() || null,
-    is_official: fd.get("is_official") === "on",
-    verified_at: fd.get("is_official") === "on" ? new Date().toISOString() : null,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "university_id,specialty_slug,bac_branch,year" });
-  if (error) throw new Error(`تعذر حفظ معدل القبول: ${error.message}`);
-  await log(email, "acceptance_rate_save", `${university_id}:${specialty_slug}:${bac_branch}:${year}`);
-  revalidatePath(`/specialties/${specialty_slug}`);
-  revalidatePath("/specialties", "layout");
-  revalidatePath("/admin/universities");
-}
+  let text = String(fd.get("json") ?? "").trim();
+  const file = fd.get("file");
+  if (file && typeof file !== "string" && file.size > 0) {
+    if (file.size > 10 * 1024 * 1024) return { error: "حجم الملف يتجاوز 10 ميغابايت." };
+    text = (await file.text()).trim();
+  }
+  if (!text) return { error: "اختر ملف JSON أو ألصق محتواه." };
+  if (text.length > 10 * 1024 * 1024) return { error: "حجم البيانات يتجاوز 10 ميغابايت." };
+  let raw: unknown;
+  try { raw = JSON.parse(text.replace(/^\ufeff/, "")); } catch { return { error: "JSON غير صالح: تحقق من الفواصل والأقواس." }; }
 
-export async function deleteAcceptanceRate(fd: FormData) {
-  const email = await requireAdmin();
-  const id = Number(fd.get("id"));
-  const specialty_slug = String(fd.get("specialty_slug") ?? "");
-  if (!Number.isSafeInteger(id) || id <= 0 || !validSlug(specialty_slug)) return;
-  const { error } = await adminClient().from("acceptance_rates").delete().eq("id", id).eq("specialty_slug", specialty_slug);
-  if (error) throw new Error(`تعذر حذف سجل المعدل: ${error.message}`);
-  await log(email, "acceptance_rate_delete", `${specialty_slug}:${id}`);
+  const sb = adminClient();
+  // التحقق من وجود التخصصات المشار إليها قبل أي كتابة
+  const wanted = collectSpecialtySlugs(raw);
+  const known = new Set<string>();
+  for (let i = 0; i < wanted.length; i += 150) {
+    const { data, error } = await sb.from("specialties").select("slug").in("slug", wanted.slice(i, i + 150));
+    if (error) return { error: `تعذر قراءة التخصصات: ${error.message}` };
+    for (const r of (data ?? []) as { slug: string }[]) known.add(r.slug);
+  }
+  const res = validateUniversities(raw, { knownSpecialties: known, allowedSeries: await allSeriesNames(), publishAll: fd.get("publish") === "on" });
+  if (!res.ok) return { error: res.error };
+
+  const replace = fd.get("replace") === "on";
+  const { universities, links, rates } = res.value;
+  const { data, error } = await sb.rpc("import_universities_bundle", { p_universities: universities, p_links: links, p_rates: rates, p_replace: replace });
+  if (error) {
+    const hint = /import_universities_bundle/.test(error.message) ? " — نفّذ ملف supabase/migrations/20261119_import_universities_bundle.sql في Supabase أولاً." : "";
+    return { error: `تعذر الاستيراد (لم يُحفظ شيء): ${error.message}${hint}` };
+  }
+  const n = (data ?? {}) as { universities?: number; links?: number; rates?: number };
+  await log(email, replace ? "universities_import_replace" : "universities_import", `${n.universities ?? universities.length} uni / ${n.rates ?? rates.length} rates`);
   revalidatePath("/specialties", "layout");
   revalidatePath("/admin/universities", "layout");
+  revalidatePath("/admin");
+  return { ok: `تم الاستيراد: ${n.universities ?? universities.length} جامعة، ${n.links ?? links.length} ربط بتخصص، ${n.rates ?? rates.length} سجل معدل قبول.` };
 }
