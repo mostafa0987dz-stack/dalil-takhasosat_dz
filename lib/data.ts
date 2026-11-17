@@ -25,14 +25,15 @@ export async function getSpecialties(): Promise<Specialty[]> {
   if (!hasSupabase) return local as unknown as Specialty[];
   try {
     const sb = createClient(url!, anon!, { auth: { persistSession: false } });
-    // جلب البيانات على دفعات من 1000 صف لتجاوز سقف PostgREST الافتراضي (1000 صف)
+    // سقف PostgREST = 1000 صف لكل طلب: نقرأ على دفعات حتى تُرجع الدفعة أقل من 1000
     const rows: any[] = [];
-    for (let from = 0; from < 20000; from += 1000) {
+    for (let from = 0; ; from += 1000) {
       const { data, error } = await sb
         .from("specialties")
         .select("*, thresholds(*)")
         .eq("published", true)
         .order("nom_ar")
+        .order("slug") // ترتيب ثابت بين الدفعات (nom_ar قد يتكرر)
         .range(from, from + 999);
       if (error) throw error;
       rows.push(...(data ?? []));

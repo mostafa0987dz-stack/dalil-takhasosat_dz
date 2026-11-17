@@ -158,9 +158,19 @@ After installing dependencies, run `npm run typecheck` and `npm run preview` bef
 - **لوحة التحكم** مقسّمة إلى أقسام تُبثّ بشكل مستقل (`components/admin/DashboardSections.tsx`): المؤشرات (استعلامات count بدل تحميل كل الصفوف)، الرسم الزمني، توزيع المجالات، جدول التخصصات (حتى 300 صف، 25 في كل دفعة)، آخر العمليات.
 - **نموذج التخصص** مقسّم إلى 4 أقسام بشريط تنقل ثابت (الأساسيات، الوصف والمحتوى، الشعب والعتبات، النشر) وشريط حفظ ثابت أسفل الشاشة.
 
+## ما تم في هذه الجلسة («حزمة الأساس»)
+1. **تجميد اللغات (دون حذف النظام):** `app/layout.tsx` صار `<html lang="ar" dir="rtl">` ثابتاً بلا قراءة كوكيز، وأُزيلت فروع fr/en ومحدّد اللغة من Header وFooter وMobileTabBar وHeroSearch وصفحتي `/bac`. بقي `lib/i18n.ts` و`app/api/locale/route.ts` وأعمدة قاعدة البيانات كما هي، مع تعليق «FROZEN» في أعلى الملفين. الصفحة الرئيسية استُبدل فيها `getLocale()` بقيمة ثابتة `"ar"` فقط (دون لمس بقية نصوصها).
+2. **الكود الميت والأعمدة النائمة:** حُذف `components/SeuilsClient.tsx`. وصار `AdSlot` يفلتر حسب `ads.device` (يُحسم عند العميل عبر `components/AdDeviceGate.tsx` حتى لا تصير الصفحة ديناميكية) وحسب `ads.specialty_slug` عبر الخاصية `specialtySlug` (غير الممرَّرة = الإعلانات العامة فقط)، مع إبقاء فلترة placement وlocale.
+3. **سقف PostgREST:** `getSpecialties()` في `lib/data.ts` تقرأ على دفعات من 1000 صف بـ `.range()` (مع ترتيب ثانوي بـ `slug` لثبات الترتيب).
+4. **اختبارات vitest:** أُضيف `vitest` وسكربت `npm test` وثلاثة ملفات في `lib/__tests__/` (validate، formulas، validate-universities).
 
-## ما تم في هذه الجلسة
-- **المهمة 1 — تجميد نظام اللغات (Freeze, don't delete):** تثبيت `<html lang="ar" dir="rtl">` في `app/layout.tsx`، وحذف محددات وتبديل اللغات من `Header` و`Footer` و`MobileTabBar` و`HeroSearch` وصفحات البكالوريا مع الإبقاء على `lib/i18n.ts` و`app/api/locale/route.ts` مجمدة بتعليق توضيحي.
-- **المهمة 2 — حذف الكود الميت وتفعيل الأعمدة النائمة:** حذف `components/SeuilsClient.tsx` نهائياً، وتفعيل فلترة الإعلانات في `components/AdSlot.tsx` حسب الجهاز (`device`) ومعرّف التخصص (`specialty_slug`).
-- **المهمة 3 — إصلاح سقف PostgREST في `getSpecialties()`:** اعتماد التصفح على دفعات من 1000 صف عبر `.range()` في `lib/data.ts` لتجاوز حد PostgREST الافتراضي.
-- **المهمة 4 — اختبارات دنيا (`vitest`):** إضافة `vitest` وسكربت `"test": "vitest run"` في `package.json`، وإنشاء 3 ملفات اختبار (`validate.test.ts`، `formulas.test.ts`، `validate-universities.test.ts`).
+## ما تم في هذه الجلسة (الحزم 3 ← 1 ← 2 ← 4)
+**الحزمة 3 — إدارة المعدلات يدوياً:** صفحة `/admin/universities/[id]/rates` (جدول تخصص × شعبة × آخر 8 سنوات، تحرير داخل الخانة: Enter/blur حفظ، Esc إلغاء، زر × للحذف، لوحة «تفاصيل» للمصدر والرسمي، فلاتر وإحصائيات) + دالتان `saveAcceptanceRate` و`deleteAcceptanceRate` في `app/admin/actions.ts` (requireAdmin، تحقق كامل، upsert، audit_log، revalidatePath). زر «إدارة المعدلات يدوياً» في صفحة الجامعة مع إبقاء رفع JSON وربط التخصصات.
+
+**الحزمة 1 — صفحة التخصص:** قسم «المواد الأساسية»، رسم تطور أدنى معدل (Sparkline) بتبديل الشعبة، «أسئلة شائعة» (details + JSON-LD FAQPage) مولَّدة من البيانات، ووصف مولَّد للعرض فقط إن كان الوصف فارغاً.
+
+**الحزمة 2 — صفحة الجامعة:** ملخص في الـ Hero، تجميع التخصصات حسب الكلية، بطاقة «أسهل القبول»، «جامعات أخرى في نفس الولاية»، `ScoreWidget` موحّد (نطاقا التخصص والجامعة)، ووصف مولَّد للعرض فقط. لم تُنفَّذ الخريطة SVG (اختيارية).
+
+**الحزمة 4 — جدول المقارنة السريعة** داخل تبويب «تخصصات مشابهة» + JSON-LD ItemList.
+
+ملفات مساعدة: `lib/autotext.ts`، ودوال `latestMin/minByYear/admissionStatus` في `lib/rates.ts`، و`getRatesForSpecialties` في `lib/universities.ts`، واختبارات `lib/__tests__/rates.test.ts`.

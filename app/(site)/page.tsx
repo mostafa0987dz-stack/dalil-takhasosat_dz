@@ -8,19 +8,21 @@ import HeroSearch from "@/components/HeroSearch";
 import DomainIcon from "@/components/DomainIcon";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import AdSlot from "@/components/AdSlot";
-import { messages } from "@/lib/i18n";
+import { messages, type Locale } from "@/lib/i18n";
 
 export const revalidate = 600;
 
 export default async function Home() {
-  const t = messages.ar;
+  const locale = "ar" as Locale; // FROZEN: واجهة عربية فقط (لا قراءة كوكيز)
+  const t = messages[locale];
+  const L = (ar: string, fr: string, en: string) => (locale === "fr" ? fr : locale === "en" ? en : ar);
   const tools: { t: string; d: string; u: string; Icon: LucideIcon }[] = [
     { t: t.calculator, d: t.calculatorDesc, u: "/calculator", Icon: Calculator },
     { t: t.thresholds, d: t.seuilDesc, u: "/seuils", Icon: ListChecks },
     { t: t.compare, d: t.compareDesc, u: "/compare", Icon: GitCompare },
     { t: t.series, d: t.seriesDesc, u: "/bac", Icon: BookOpen },
-    { t: "الجامعات", d: "تصفح الجامعات والتخصصات المتوفرة في كل منها ومعدلات القبول.", u: "/universities", Icon: Building2 },
-    { t: "أين أقبل؟", d: "أدخل شعبتك ومعدلك لتعرف التخصصات والجامعات المناسبة.", u: "/finder", Icon: Search },
+    { t: L("الجامعات", "Universités", "Universities"), d: L("تصفح الجامعات والتخصصات المتوفرة في كل منها ومعدلات القبول.", "Parcourez les universités, leurs spécialités et leurs seuils d’admission.", "Browse universities, their majors and admission scores."), u: "/universities", Icon: Building2 },
+    { t: L("أين أقبل؟", "Où être admis ?", "Where can I get in?"), d: L("أدخل شعبتك ومعدلك لتعرف التخصصات والجامعات المناسبة.", "Saisissez votre filière et moyenne pour voir où vous pouvez être admis.", "Enter your stream and average to see where you can get in."), u: "/finder", Icon: Search },
   ];
   const [data, series] = await Promise.all([getSpecialties(), getBacSeries()]);
   const domains = Array.from(new Set(data.map((x) => x.domaine)));
@@ -100,7 +102,7 @@ export default async function Home() {
       </section>
 
       <section className="container-page pb-10" aria-labelledby="by-domain">
-        <h2 id="by-domain" className="section-title mb-5">تصفح حسب المجال</h2>
+        <h2 id="by-domain" className="section-title mb-5">{L("تصفح حسب المجال", "Parcourir par domaine", "Browse by field")}</h2>
         <div className="flex flex-wrap gap-2">
           {domains.map((d) => <Link key={d} href={`/specialties?d=${encodeURIComponent(d)}`} prefetch={false} className="chip gap-2"><DomainIcon domaine={d} size={15} />{d}</Link>)}
         </div>

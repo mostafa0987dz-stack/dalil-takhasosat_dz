@@ -183,3 +183,14 @@ export async function findAdmissions(opts: { branch: string; average: number; wi
   }
   return out.sort((a, b) => (a.status === b.status ? b.score - a.score : a.status === "ok" ? -1 : 1));
 }
+
+export type SpecialtyRate = { university_id: string; specialty_slug: string; bac_branch: string; year: number; score: number };
+
+/** معدلات (غير الفارغة) لعدة تخصصات عبر كل الجامعات المنشورة؛ سياسات RLS تخفي غير المنشور. */
+export async function getRatesForSpecialties(slugs: string[]): Promise<SpecialtyRate[]> {
+  const sb = client();
+  if (!sb || !slugs.length) return [];
+  const rows = await paged<any>((from, to) =>
+    sb.from("acceptance_rates").select("university_id,specialty_slug,bac_branch,year,score").in("specialty_slug", slugs).not("score", "is", null).order("id").range(from, to));
+  return rows.map((r) => ({ university_id: r.university_id, specialty_slug: r.specialty_slug, bac_branch: r.bac_branch, year: r.year, score: Number(r.score) }));
+}

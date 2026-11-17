@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSpecialties, getSpecialty } from "@/lib/data";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
-import { getUniversitiesForSpecialty } from "@/lib/universities";
+import { getRatesForSpecialties, getUniversitiesForSpecialty } from "@/lib/universities";
+import { latestMin, latestPerBranch, minByYear } from "@/lib/rates";
+import { autoSpecialtyDescription } from "@/lib/autotext";
 import { similarTo, toIsoDuration } from "@/lib/specialty";
 import DomainIcon, { domainCls } from "@/components/DomainIcon";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -12,6 +14,10 @@ import SpecialtyCard from "@/components/SpecialtyCard";
 import SpecialtyTabs from "@/components/SpecialtyTabs";
 import PrintSheet from "@/components/PrintSheet";
 import UniversityCards from "@/components/UniversityCards";
+import MiniTrendChart from "@/components/MiniTrendChart";
+import ScoreWidget, { type ScoreItem } from "@/components/ScoreWidget";
+import SpecialtyFaq, { type FaqItem } from "@/components/SpecialtyFaq";
+import SpecialtyCompareTable, { type CompareCol } from "@/components/SpecialtyCompareTable";
 import JsonLd from "@/components/JsonLd";
 import { GitCompare } from "lucide-react";
 
@@ -47,8 +53,40 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
   if (!s) notFound();
 
   const similar = similarTo(s, all, 3);
-  const universities = await getUniversitiesForSpecialty(s.slug);
+  const compareSpecs = similar.slice(0, 3);
+  const [universities, ratesAll] = await Promise.all([
+    getUniversitiesForSpecialty(s.slug),
+    getRatesForSpecialties([s.slug, ...compareSpecs.map((x) => x.slug)]),
+  ]);
   const pageUrl = `${SITE_URL}/specialties/${s.slug}`;
+
+  // معدلات هذا التخصص عبر الجامعات: للرسم والأسئلة الشائعة والوصف المولَّد
+  const rates = ratesAll.filter((r) => r.specialty_slug === s.slug);
+  const min = latestMin(rates);
+  const description = s.description_ar.trim() || autoSpecialtyDescription(s, universities.length, min); // عرض فقط، لا يُحفظ
+  const trendByBranch = Object.fromEntries(Array.from(new Set(rates.map((r) => r.bac_branch))).map((b) => [b, minByYear(rates, b, 6)]));
+
+  // أداة «هل معدلي يكفي؟» (نطاق التخصص): أحدث معدل لكل شعبة في كل جامعة
+  const widgetItems: ScoreItem[] = universities.flatMap((u) => {
+    const own = latestPerBranch(rates.filter((r) => r.university_id === u.id));
+    return own.length ? [{ key: u.id, label: u.name_ar, href: `/specialties/${s.slug}/${u.slug}`, rates: own.map((r) => ({ b: r.branch, y: r.year, s: r.score })) }] : [];
+  });
+  const widgetBranches = Array.from(new Set(rates.map((r) => r.bac_branch)));
+
+  // أسئلة شائعة مُولَّدة من البيانات؛ السؤال بلا بيانات يُحذف
+  const faq: FaqItem[] = [];
+  if (min) faq.push({ q: `ما هو أدنى معدل قبول في ${s.nom_ar}؟`, a: `أدنى معدل قبول مسجّل في ${s.nom_ar} هو ${min.score.toFixed(2)} في ${min.year} (شعبة ${min.branch}) حسب أحدث بيانات الدليل، وتتغير المعدلات من سنة إلى أخرى.` });
+  if (s.duree.trim()) faq.push({ q: `كم سنة دراسة ${s.nom_ar}؟`, a: `مدة الدراسة في ${s.nom_ar}: ${s.duree.trim()}.` });
+  if (s.filiere.length) faq.push({ q: `ما الشعب المؤهلة لتخصص ${s.nom_ar}؟`, a: `الشعب المؤهلة لتخصص ${s.nom_ar}: ${s.filiere.join("، ")}.` });
+  if (universities.length) faq.push({ q: `في كم جامعة يُدرَّس ${s.nom_ar}؟`, a: `يُدرَّس ${s.nom_ar} في ${universities.length} جامعة ضمن بيانات الدليل.` });
+
+  const compareCols: CompareCol[] = [s, ...compareSpecs].map((x) => {
+    const m = latestMin(ratesAll.filter((r) => r.specialty_slug === x.slug));
+    return { slug: x.slug, nom_ar: x.nom_ar, duree: x.duree, diplome: x.diplome, filiere: x.filiere, min: m ? { score: m.score, year: m.year } : null };
+  });
+  const extraLd: Record<string, unknown>[] = [];
+  if (faq.length) extraLd.push({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) });
+  if (similar.length) extraLd.push({ "@context": "https://schema.org", "@type": "ItemList", name: `تخصصات مشابهة لـ ${s.nom_ar}`, itemListElement: similar.map((x, i) => ({ "@type": "ListItem", position: i + 1, name: x.nom_ar, url: `${SITE_URL}/specialties/${x.slug}` })) });
 
   const jsonLd = [
     {
@@ -56,7 +94,7 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
       "@type": "EducationalOccupationalProgram",
       name: s.nom_ar,
       alternateName: s.nom_fr || undefined,
-      description: s.description_ar,
+      description,
       url: pageUrl,
       inLanguage: "ar",
       timeToComplete: toIsoDuration(s.duree),
@@ -87,7 +125,13 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
       id: "about", label: "نبذة",
       content: (
         <section className="card">
-          <p className="leading-9 text-slate-700 dark:text-slate-300">{s.description_ar}</p>
+          <p className="leading-9 text-slate-700 dark:text-slate-300">{description}</p>
+          {s.subjects && s.subjects.length > 0 && (
+            <div className="mt-6">
+              <h3 className="mb-3 text-lg font-black">المواد الأساسية</h3>
+              <ul className="flex flex-wrap gap-2">{s.subjects.map((x) => <li key={x} className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800 dark:bg-blue-950/60 dark:text-blue-200">{x}</li>)}</ul>
+            </div>
+          )}
           <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
             <div className="rounded-2xl bg-white/50 p-4 dark:bg-slate-800/40"><dt className="text-slate-500">الشهادة</dt><dd className="mt-1 font-bold">{s.diplome}</dd></div>
             <div className="rounded-2xl bg-white/50 p-4 dark:bg-slate-800/40"><dt className="text-slate-500">المدة</dt><dd className="mt-1 font-bold">{s.duree}</dd></div>
@@ -110,6 +154,8 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
       content: (
         <section>
           <p className="mb-4 max-w-3xl leading-8 text-slate-600 dark:text-slate-400">معدلات القبول مرتبطة بالجامعة وشعبة البكالوريا والسنة. اختر الجامعة لعرض جدول المعدلات ومصادره.</p>
+          {Object.keys(trendByBranch).length > 0 && <MiniTrendChart byBranch={trendByBranch} defaultBranch="علوم تجريبية" />}
+          <ScoreWidget scope="specialty" items={widgetItems} branches={widgetBranches} />
           {universities.length ? (
             <UniversityCards items={universities} specialtySlug={s.slug} />
           ) : <p className="card text-slate-600 dark:text-slate-400">لم تُضف جامعات لهذا التخصص بعد.</p>}
@@ -121,13 +167,18 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
   if (similar.length) {
     tabs.push({
       id: "similar", label: "تخصصات مشابهة",
-      content: <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{similar.map((x) => <SpecialtyCard key={x.slug} item={x} />)}</div>,
+      content: (
+        <div className="space-y-8">
+          <SpecialtyCompareTable cols={compareCols} />
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{similar.map((x) => <SpecialtyCard key={x.slug} item={x} />)}</div>
+        </div>
+      ),
     });
   }
 
   return (
     <article className="container-page print-article max-w-5xl py-12">
-      <JsonLd data={jsonLd} />
+      <JsonLd data={[...jsonLd, ...extraLd]} />
       <div className="no-print">
 
       <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -145,6 +196,8 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
       </div>
 
       <SpecialtyTabs tabs={tabs} />
+
+      <SpecialtyFaq items={faq} />
 
       <div className="no-print mt-8 flex flex-wrap gap-3">
         <Link href={`/calculator?specialty=${s.slug}`} className="btn-primary">احسب معدلي لهذا التخصص</Link>

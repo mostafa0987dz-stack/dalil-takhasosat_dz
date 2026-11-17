@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import DomainIcon, { domainCls } from "./DomainIcon";
+import { admissionStatus } from "@/lib/rates";
 
 export type UniSpecialtyView = {
   slug: string; nom_ar: string; domaine: string; diplome: string; duree: string; faculty: string | null;
@@ -33,12 +34,21 @@ export default function UniversitySpecialties({ universitySlug, items, branches 
       const mine = i.rates.find((r) => r.b === branch);
       const min = i.rates.length ? Math.min(...i.rates.map((r) => r.s)) : null;
       let status: Status = "none";
-      if (personal && mine) status = average >= mine.s ? "ok" : mine.s - average <= 1 ? "near" : "high";
+      if (personal && mine) status = admissionStatus(mine.s, average);
       return { i, mine, min, status };
     }).sort((a, b) => (personal ? ORDER[a.status] - ORDER[b.status] : 0) || a.i.nom_ar.localeCompare(b.i.nom_ar, "ar"));
   }, [items, q, domain, branch, avg, personal, average]);
 
   const okCount = personal ? rows.filter((r) => r.status === "ok").length : 0;
+
+  // تجميع حسب الكلية (على النتائج المفلترة)؛ إن كانت كل الكليات فارغة نبقى على العرض المسطّح/حسب المجال
+  const hasFaculties = items.some((i) => (i.faculty ?? "").trim() !== "");
+  const facultyGroups = useMemo(() => {
+    if (!hasFaculties) return null;
+    const m = new Map<string, typeof rows>();
+    for (const r of rows) { const f = (r.i.faculty ?? "").trim(); m.set(f, [...(m.get(f) ?? []), r]); }
+    return [...m.entries()].sort(([a], [b]) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b, "ar")));
+  }, [rows, hasFaculties]);
   const grouped = !personal;
   const groups = grouped ? domains.filter((d) => rows.some((r) => r.i.domaine === d)) : [""];
 
@@ -84,7 +94,15 @@ export default function UniversitySpecialties({ universitySlug, items, branches 
       ) : (
         <p className="text-sm text-slate-500">اختر شعبتك وأدخل معدلك لترتيب التخصصات حسب فرصك في هذه الجامعة.</p>
       )}
-      {groups.map((g) => (
+      {facultyGroups ? facultyGroups.map(([name, list]) => (
+        <section key={name || "none"} aria-label={name || "غير محدد"}>
+          <h3 className="mb-3 flex flex-wrap items-center gap-2 text-base font-black">
+            <span>{name || "غير محدد"}</span>
+            <span className="rounded-full bg-slate-100 px-3 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{list.length} تخصصاً</span>
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{list.map(card)}</div>
+        </section>
+      )) : groups.map((g) => (
         <section key={g || "all"} aria-label={g || "التخصصات"}>
           {g && <h3 className={`mb-3 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold ${domainCls(g)}`}><DomainIcon domaine={g} size={15} />{g}</h3>}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{rows.filter((r) => !g || r.i.domaine === g).map(card)}</div>

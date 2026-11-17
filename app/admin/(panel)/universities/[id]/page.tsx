@@ -44,9 +44,10 @@ export default async function UniversityAdminDetail({params}:Props) {
       </div>
       <div className="flex flex-wrap gap-2">
         <a className="btn-ghost" href={`/admin/export?type=universities&slug=${university.slug}`}><Download size={15}/>تصدير هذه الجامعة</a>
+        <Link className="btn-ghost" href={`/admin/universities/${id}/rates`}>إدارة المعدلات يدوياً</Link>
         <Link className="btn-primary !py-2" href="/admin/import#universities"><FileUp size={15}/>رفع معدلات (JSON)</Link>
       </div>
-      <p className="w-full text-xs leading-6 text-slate-500">معدلات القبول تُدار بالملف فقط: صدّر هذه الجامعة، عدّل الملف، ثم ارفعه مع خيار «استبدال معدلات القبول» لتحديث السجلات أو حذف القديم منها.</p>
+      <p className="w-full text-xs leading-6 text-slate-500">يمكنك تعديل المعدلات يدوياً من «إدارة المعدلات يدوياً»، أو دفعة واحدة بالملف: صدّر هذه الجامعة، عدّل الملف، ثم ارفعه (خيار «استبدال معدلات القبول» يحذف القديم منها).</p>
     </section>
 
     <section><h2 className="mb-3 text-xl font-black">بيانات الجامعة</h2><UniversityForm initial={university}/></section>

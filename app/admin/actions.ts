@@ -453,3 +453,89 @@ async function previewUniversitiesImport(sb: ReturnType<typeof adminClient>, v: 
   const newUnis = v.universities.filter((u) => !idBySlug.has(u.slug)).length;
   return `معاينة فقط — لم يُحفظ شيء. الجامعات: ${newUnis} جديدة و${v.universities.length - newUnis} موجودة. روابط التخصصات: ${v.links.length}. المعدلات: ${fresh} جديدة، ${changed} ستتغير قيمتها، ${same} بلا تغيير${replace ? `، ${removed} ستُحذف (وضع الاستبدال)` : ""}. إن كانت الأرقام صحيحة اضغط «رفع الجامعات والمعدلات».`;
 }
+
+/* ---------- إدارة معدلات القبول يدوياً (صفحة /admin/universities/[id]/rates) ---------- */
+export type RateRecord = {
+  id: number; specialty_slug: string; bac_branch: string; year: number; score: number | null;
+  is_official: boolean; source_url: string | null; source_title: string | null; notes: string | null; updated_at: string | null;
+};
+export type RateResult = { error?: string; record?: RateRecord; deleted?: boolean };
+
+const RATE_COLS = "id,specialty_slug,bac_branch,year,score,is_official,source_url,source_title,notes,updated_at";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const textOrNull = (v: FormDataEntryValue | null, max: number) => { const t = String(v ?? "").trim().slice(0, max); return t || null; };
+const toRecord = (r: any): RateRecord => ({ ...r, score: r.score === null || r.score === undefined ? null : Number(r.score) });
+
+function revalidateRatePages(universitySlug: string, specialtySlug: string, universityId: string) {
+  revalidatePath(`/specialties/${specialtySlug}`);
+  revalidatePath(`/specialties/${specialtySlug}/${universitySlug}`);
+  revalidatePath(`/universities/${universitySlug}`);
+  revalidatePath(`/admin/universities/${universityId}/rates`);
+}
+
+/** إضافة أو تعديل معدل (upsert على الجامعة + التخصص + الشعبة + السنة). */
+export async function saveAcceptanceRate(fd: FormData): Promise<RateResult> {
+  const email = await requireAdmin();
+  const universityId = String(fd.get("university_id") ?? "");
+  const specialtySlug = String(fd.get("specialty_slug") ?? "").trim().toLowerCase();
+  const branch = String(fd.get("bac_branch") ?? "").trim();
+  const year = Number(fd.get("year"));
+  const scoreRaw = String(fd.get("score") ?? "").trim().replace(",", ".");
+  const score = scoreRaw === "" ? null : Number(scoreRaw);
+  if (!UUID_RE.test(universityId)) return { error: "جامعة غير صالحة." };
+  if (!SLUG_RE.test(specialtySlug)) return { error: "تخصص غير صالح." };
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return { error: "السنة يجب أن تكون بين 2000 و2100." };
+  if (score !== null && (!Number.isFinite(score) || score < 0 || score > 20)) return { error: "المعدل يجب أن يكون بين 0 و20." };
+  const urlRaw = String(fd.get("source_url") ?? "").trim();
+  let source_url: string | null = null;
+  if (urlRaw) {
+    try { if (!["http:", "https:"].includes(new URL(urlRaw).protocol)) throw new Error("scheme"); source_url = urlRaw.slice(0, 2000); }
+    catch { return { error: "رابط المصدر غير صالح (يجب أن يبدأ بـ http أو https)." }; }
+  }
+  const isOfficial = ["on", "1", "true"].includes(String(fd.get("is_official") ?? ""));
+  if (isOfficial && !source_url) return { error: "السجل الرسمي يتطلب رابط مصدر (source_url)." };
+  if (!(await allSeriesNames()).includes(branch)) return { error: "شعبة غير معروفة. استخدم اسماً من «شعب البكالوريا»." };
+
+  const sb = adminClient();
+  const [uni, spec, link] = await Promise.all([
+    sb.from("universities").select("id,slug").eq("id", universityId).maybeSingle(),
+    sb.from("specialties").select("slug").eq("slug", specialtySlug).maybeSingle(),
+    sb.from("university_specialties").select("id").eq("university_id", universityId).eq("specialty_slug", specialtySlug).maybeSingle(),
+  ]);
+  if (!uni.data) return { error: "الجامعة غير موجودة." };
+  if (!spec.data) return { error: "التخصص غير موجود." };
+  if (!link.data) return { error: "اربط هذا التخصص بالجامعة أولاً (قسم «التخصصات المرتبطة» في صفحة الجامعة)." };
+
+  const now = new Date().toISOString();
+  const { data, error } = await sb.from("acceptance_rates").upsert({
+    university_id: universityId, specialty_slug: specialtySlug, bac_branch: branch, year,
+    score: score === null ? null : Math.round(score * 100) / 100,
+    source_url, source_title: textOrNull(fd.get("source_title"), 200), notes: textOrNull(fd.get("notes"), 500),
+    is_official: isOfficial, verified_at: isOfficial ? now : null, updated_at: now,
+  }, { onConflict: "university_id,specialty_slug,bac_branch,year" }).select(RATE_COLS).single();
+  if (error || !data) return { error: `تعذر الحفظ: ${error?.message ?? "خطأ غير معروف"}` };
+
+  await log(email, "save_acceptance_rate", `${(uni.data as any).slug}/${specialtySlug}/${branch}/${year}`);
+  revalidateRatePages((uni.data as any).slug, specialtySlug, universityId);
+  return { record: toRecord(data) };
+}
+
+/** حذف سجل معدل بمعرّفه. */
+export async function deleteAcceptanceRate(fd: FormData): Promise<RateResult> {
+  const email = await requireAdmin();
+  const id = Number(fd.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return { error: "معرّف غير صالح." };
+  const sb = adminClient();
+  const { data: row, error: readError } = await sb.from("acceptance_rates")
+    .select("id,university_id,specialty_slug,bac_branch,year,universities(slug)").eq("id", id).maybeSingle();
+  if (readError) return { error: `تعذرت القراءة: ${readError.message}` };
+  if (!row) return { error: "السجل غير موجود (ربما حُذف سابقاً)." };
+  const { error } = await sb.from("acceptance_rates").delete().eq("id", id);
+  if (error) return { error: `تعذر الحذف: ${error.message}` };
+  const r = row as any;
+  const uniSlug: string = (Array.isArray(r.universities) ? r.universities[0]?.slug : r.universities?.slug) ?? "";
+  await log(email, "delete_acceptance_rate", `${uniSlug}/${r.specialty_slug}/${r.bac_branch}/${r.year}`);
+  revalidateRatePages(uniSlug, r.specialty_slug, r.university_id);
+  return { deleted: true };
+}

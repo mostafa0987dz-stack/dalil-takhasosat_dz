@@ -36,3 +36,33 @@ export function freshness(dates: (string | null | undefined)[]): { label: string
   const months = (Date.now() - latest) / (1000 * 60 * 60 * 24 * 30.4);
   return { label: new Date(latest).toLocaleDateString("ar-DZ", { year: "numeric", month: "long" }), stale: months > 18 };
 }
+
+type RateLike = { bac_branch: string; year: number; score: number | null };
+
+/** أدنى معدل في أحدث سنة متوفرة (عبر كل الجامعات والشعب). */
+export function latestMin(rates: RateLike[]): { year: number; score: number; branch: string } | null {
+  const valid = rates.filter((r) => r.score !== null);
+  if (!valid.length) return null;
+  const year = Math.max(...valid.map((r) => r.year));
+  const best = valid.filter((r) => r.year === year).reduce((a, b) => (Number(b.score) < Number(a.score) ? b : a));
+  return { year, score: Number(best.score), branch: best.bac_branch };
+}
+
+/** تطور أدنى معدل (عبر الجامعات) لشعبة: آخر `limit` سنوات متوفرة، من الأقدم إلى الأحدث. */
+export function minByYear(rates: RateLike[], branch: string, limit = 6): { year: number; score: number }[] {
+  const byYear = new Map<number, number>();
+  for (const r of rates) {
+    if (r.bac_branch !== branch || r.score === null) continue;
+    const v = Number(r.score);
+    const cur = byYear.get(r.year);
+    if (cur === undefined || v < cur) byYear.set(r.year, v);
+  }
+  return [...byYear.entries()].map(([year, score]) => ({ year, score })).sort((a, b) => b.year - a.year).slice(0, limit).sort((a, b) => a.year - b.year);
+}
+
+/** حالة معدل الطالب مقابل آخر معدل مسجّل: يكفي / قريب (ينقصه ≤ نقطة) / أعلى. */
+export const ADMISSION_NEAR = 1;
+export type AdmissionStatus = "ok" | "near" | "high";
+export function admissionStatus(score: number, average: number): AdmissionStatus {
+  return average >= score ? "ok" : score - average <= ADMISSION_NEAR ? "near" : "high";
+}

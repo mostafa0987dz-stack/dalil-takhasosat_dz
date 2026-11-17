@@ -36,6 +36,8 @@ export default function HeroSearch() {
 
   const showList = open && q.trim().length > 0;
   const placeholder = "ابحث عن تخصص... مثال: طب، قانون، IA";
+  const searchLabel = "بحث";
+  const emptyLabel = "لا توجد اقتراحات — اضغط «بحث» لعرض كل النتائج.";
 
   function onKey(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, hits.length - 1)); }
@@ -56,7 +58,7 @@ export default function HeroSearch() {
           className="min-w-0 flex-1 text-ellipsis bg-transparent py-2 text-base text-slate-900 outline-none placeholder:text-sm placeholder:text-slate-400 sm:placeholder:text-base"
         />
         {q && <button type="button" onClick={() => { setQ(""); setActive(-1); }} className="p-2 text-slate-400 transition-colors hover:text-red-500" aria-label="مسح البحث"><X size={18} /></button>}
-        <button className="rounded-2xl bg-blue-600 px-5 py-2.5 font-bold text-white transition-all hover:bg-blue-700 active:scale-95">بحث</button>
+        <button className="rounded-2xl bg-blue-600 px-5 py-2.5 font-bold text-white transition-all hover:bg-blue-700 active:scale-95">{searchLabel}</button>
       </form>
 
       {showList && (
@@ -68,7 +70,7 @@ export default function HeroSearch() {
               </Link>
             </li>
           ))}
-          {!hits.length && <li className="px-4 py-4 text-sm text-slate-500">لا توجد اقتراحات — اضغط «بحث» لعرض كل النتائج.</li>}
+          {!hits.length && <li className="px-4 py-4 text-sm text-slate-500">{emptyLabel}</li>}
         </ul>
       )}
     </div>
