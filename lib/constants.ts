@@ -9,4 +9,4 @@ export const SERIES = [
 
 export const SERIE_NAMES: string[] = SERIES.map((s) => s.name);
 export const SITE_NAME = "دليل التخصصات الجامعية الجزائرية";
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://dalil-takhasosat-dz-main.xvertex.workers.dev").replace(/\\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://dalil-takhasosat-dz-main.xvertex.workers.dev").replace(/\/$/, "");
