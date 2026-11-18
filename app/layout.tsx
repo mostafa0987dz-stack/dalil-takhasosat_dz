@@ -15,7 +15,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
+  alternates: { canonical: "/" },
   description: "اكتشف التخصصات الجامعية في الجزائر وشروط الالتحاق وآفاق الدراسة.",
   // TODO: أضف الملف public/og-image.png (1200×630) قبل النشر؛ حتى يُضاف يعطي رابط الصورة 404.
   openGraph: { type: "website", locale: "ar_DZ", siteName: SITE_NAME, images: [{ url: "/og-image.png", width: 1200, height: 630, alt: SITE_NAME }] },
@@ -28,6 +30,7 @@ const siteLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: SITE_NAME,
+  alternateName: "دليل التخصصات",
   url: SITE_URL,
   inLanguage: "ar",
   potentialAction: { "@type": "SearchAction", target: `${SITE_URL}/specialties?q={search_term_string}`, "query-input": "required name=search_term_string" },
