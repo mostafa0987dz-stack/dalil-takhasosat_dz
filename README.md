@@ -174,3 +174,15 @@ After installing dependencies, run `npm run typecheck` and `npm run preview` bef
 **الحزمة 4 — جدول المقارنة السريعة** داخل تبويب «تخصصات مشابهة» + JSON-LD ItemList.
 
 ملفات مساعدة: `lib/autotext.ts`، ودوال `latestMin/minByYear/admissionStatus` في `lib/rates.ts`، و`getRatesForSpecialties` في `lib/universities.ts`، واختبارات `lib/__tests__/rates.test.ts`.
+
+## ما تم في هذه الجلسة (S1 وS2 وS6)
+- **S1:** `metadataBase` كان موجوداً في `app/layout.tsx` فلم يُكرَّر. صارت كل canonical مطلقة (`${SITE_URL}/...`) في الصفحات العامة، وأُضيفت للصفحات التي لم تكن لها canonical (الرئيسية، `/bac`، `/bac/[serie]`، `/about`، `/privacy`). canonical الرئيسية في صفحتها وليست في الـ layout حتى لا تتسرب إلى بقية الصفحات.
+- **S2:** `generateStaticParams` لصفحات `/universities/[slug]` و`/bac/[serie]` (revalidate 3600) و`/specialties/[slug]/[universitySlug]` (revalidate 600 و`dynamicParams = true`) عبر الدالة الجديدة `getAllPublishedUniversitySpecialties()` في `lib/universities.ts` (استعلام واحد مع pagination).
+- **S6:** إعداد `openGraph` (images/siteName/locale/type) و`twitter: summary_large_image` في الـ layout. **الملف `public/og-image.png` غير موجود (TODO في layout.tsx)**؛ أضفه قبل النشر وإلا يعطي رابط الصورة 404.
+
+## ما تم في هذه الجلسة (تدقيق SEO: S3 وS4 وS5 وS7 + اكتمال S1 وS2 وS6)
+- **S3 sitemap:** يضم كل أزواج `[slug]/[universitySlug]` مع `lastModified` حقيقي (أحدث `updated_at` لمعدلات الزوج، وإلا `created_at` للربط)، وتواريخ تحديث التخصصات والجامعات، وتواتر/أولويات حسب الجدول. حد 50000 رابط بقطع احتياطي وTODO للتقسيم.
+- **S4 metadata ديناميكية:** عناوين ووصف وOG (`article`/`website`) وTwitter `summary_large_image` لصفحات التخصص والتخصص-في-جامعة والجامعة، مع صورة المشاركة. استعلامات `generateMetadata` مشتركة مع الصفحة عبر `React.cache` (دوال `lib/data.ts` و`lib/universities.ts`).
+- **S5:** JSON-LD من نوع Organization في الـ layout، و`robots.ts` يحظر `/api/` و`/admin/export` دون `/_next/`.
+- **S7:** كل صفحة عامة فيها `<h1>` واحد (تم التحقق)، وصورة الإعلان لها alt وصفي.
+- `public/og-image.png` غير موجود بعد (TODO).

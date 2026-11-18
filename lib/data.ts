@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import local from "@/data/specialties.json";
 import type { Specialty } from "@/types";
@@ -21,7 +22,7 @@ function mapRow(r: any): Specialty {
 }
 
 /** يقرأ التخصصات المنشورة من Supabase، ويرجع إلى data/specialties.json إن لم يُضبط Supabase أو حدث خطأ. */
-export async function getSpecialties(): Promise<Specialty[]> {
+async function load_getSpecialties(): Promise<Specialty[]> {
   if (!hasSupabase) return local as unknown as Specialty[];
   try {
     const sb = createClient(url!, anon!, { auth: { persistSession: false } });
@@ -46,6 +47,10 @@ export async function getSpecialties(): Promise<Specialty[]> {
   }
 }
 
-export async function getSpecialty(slug: string) {
+async function load_getSpecialty(slug: string) {
   return (await getSpecialties()).find((x) => x.slug === slug);
 }
+
+// نتائج مُخزَّنة طوال الطلب الواحد: generateMetadata والصفحة يتشاركان البيانات بلا استعلام مكرر
+export const getSpecialties = cache(load_getSpecialties);
+export const getSpecialty = cache(load_getSpecialty);

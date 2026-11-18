@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "معدلات القبول حسب الجامعة والتخصص",
   description: "اختر التخصص ثم الجامعة لعرض معدلات القبول التاريخية حسب شعبة البكالوريا والسنة.",
-  alternates: { canonical: "/seuils" },
+  alternates: { canonical: `${SITE_URL}/seuils` },
 };
 
 export default function SeuilsPage() {

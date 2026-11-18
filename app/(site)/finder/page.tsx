@@ -3,11 +3,12 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { findAdmissions, getPublishedUniversities } from "@/lib/universities";
 import { getBacSeries } from "@/lib/series";
+import { SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "أين أقبل؟ اعرف التخصصات والجامعات المناسبة لمعدلك",
   description: "أدخل شعبتك ومعدلك في البكالوريا لتعرف التخصصات والجامعات التي يكفيك فيها المعدل حسب آخر معدلات القبول المسجلة.",
-  alternates: { canonical: "/finder" },
+  alternates: { canonical: `${SITE_URL}/finder` },
 };
 
 type Props = { searchParams: Promise<{ b?: string; s?: string; w?: string }> };

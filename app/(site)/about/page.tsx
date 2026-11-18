@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/constants";
 
-export const metadata: Metadata = { title: "عن الدليل" };
+export const metadata: Metadata = { title: "عن الدليل", alternates: { canonical: `${SITE_URL}/about` } };
 
 export default function About() {
   return (

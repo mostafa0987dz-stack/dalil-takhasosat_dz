@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { Building2, MapPin, GraduationCap } from "lucide-react";
 import { getPublishedUniversities } from "@/lib/universities";
 import UniversityCards from "@/components/UniversityCards";
+import { SITE_URL } from "@/lib/constants";
 
 export const revalidate = 600;
 export const metadata: Metadata = {
   title: "الجامعات الجزائرية والتخصصات المتوفرة في كل جامعة",
   description: "دليل الجامعات والمؤسسات الجامعية في الجزائر: الولاية والمدينة والموقع الرسمي والتخصصات التي تدرّسها كل جامعة ومعدلات القبول فيها.",
-  alternates: { canonical: "/universities" },
+  alternates: { canonical: `${SITE_URL}/universities` },
 };
 
 export default async function UniversitiesPage() {

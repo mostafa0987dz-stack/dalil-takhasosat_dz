@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen, Building2, Calculator, GitCompare, ListChecks, Search, type LucideIcon } from "lucide-react";
 import { getSpecialties } from "@/lib/data";
@@ -9,8 +10,10 @@ import DomainIcon from "@/components/DomainIcon";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import AdSlot from "@/components/AdSlot";
 import { messages, type Locale } from "@/lib/i18n";
+import { SITE_URL } from "@/lib/constants";
 
 export const revalidate = 600;
+export const metadata: Metadata = { alternates: { canonical: `${SITE_URL}/` } };
 
 export default async function Home() {
   const locale = "ar" as Locale; // FROZEN: واجهة عربية فقط (لا قراءة كوكيز)

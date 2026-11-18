@@ -47,7 +47,7 @@ export default async function AdSlot({ placement = "inline", specialtySlug }: { 
         <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
           {ad.image_url && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={ad.image_url} alt="" loading="lazy" className="h-24 w-full rounded-xl object-cover sm:w-40" />)}
+            <img src={ad.image_url} alt={`إعلان: ${ad.title}`} loading="lazy" className="h-24 w-full rounded-xl object-cover sm:w-40" />)}
           <div className="min-w-0 flex-1">
             <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">إعلان</span>
             <h3 className="font-black">{ad.title}</h3>

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -35,7 +36,7 @@ export type AcceptanceRate = {
   updated_at?: string | null;
 };
 
-export async function getUniversitiesForSpecialty(specialtySlug: string): Promise<University[]> {
+async function load_getUniversitiesForSpecialty(specialtySlug: string): Promise<University[]> {
   const sb = client();
   if (!sb) return [];
   const { data, error } = await sb
@@ -52,7 +53,7 @@ export async function getUniversitiesForSpecialty(specialtySlug: string): Promis
   return (data ?? []).map((row: any) => row.universities).filter(Boolean) as University[];
 }
 
-export async function getUniversityForSpecialty(specialtySlug: string, universitySlug: string): Promise<University | null> {
+async function load_getUniversityForSpecialty(specialtySlug: string, universitySlug: string): Promise<University | null> {
   const sb = client();
   if (!sb) return null;
   const { data, error } = await sb
@@ -67,7 +68,7 @@ export async function getUniversityForSpecialty(specialtySlug: string, universit
   return (data as any).universities as University;
 }
 
-export async function getAcceptanceRates(specialtySlug: string, universityId: string): Promise<AcceptanceRate[]> {
+async function load_getAcceptanceRates(specialtySlug: string, universityId: string): Promise<AcceptanceRate[]> {
   const sb = client();
   if (!sb) return [];
   const { data, error } = await sb
@@ -101,7 +102,7 @@ async function paged<T>(make: (from: number, to: number) => PromiseLike<{ data: 
 
 export type UniversityListItem = University & { specialties_count: number };
 
-export async function getPublishedUniversities(): Promise<UniversityListItem[]> {
+async function load_getPublishedUniversities(): Promise<UniversityListItem[]> {
   const sb = client();
   if (!sb) return [];
   const { data, error } = await sb.from("universities").select(`${UNI_COLUMNS},university_specialties(count)`).eq("is_published", true).order("name_ar");
@@ -112,7 +113,7 @@ export async function getPublishedUniversities(): Promise<UniversityListItem[]> 
   });
 }
 
-export async function getUniversityBySlug(slug: string): Promise<University | null> {
+async function load_getUniversityBySlug(slug: string): Promise<University | null> {
   const sb = client();
   if (!sb) return null;
   const { data, error } = await sb.from("universities").select(UNI_COLUMNS).eq("slug", slug).eq("is_published", true).maybeSingle();
@@ -122,7 +123,7 @@ export async function getUniversityBySlug(slug: string): Promise<University | nu
 
 export type UniversitySpecialty = { specialty_slug: string; faculty_name: string | null; nom_ar: string; nom_fr: string | null; domaine: string; diplome: string; duree: string };
 
-export async function getUniversitySpecialties(universityId: string): Promise<UniversitySpecialty[]> {
+async function load_getUniversitySpecialties(universityId: string): Promise<UniversitySpecialty[]> {
   const sb = client();
   if (!sb) return [];
   const { data, error } = await sb
@@ -138,7 +139,7 @@ export async function getUniversitySpecialties(universityId: string): Promise<Un
 
 export type UniversityRate = { specialty_slug: string; bac_branch: string; year: number; score: number | null; updated_at: string | null };
 
-export async function getUniversityRates(universityId: string): Promise<UniversityRate[]> {
+async function load_getUniversityRates(universityId: string): Promise<UniversityRate[]> {
   const sb = client();
   if (!sb) return [];
   const rows = await paged<any>((from, to) => sb.from("acceptance_rates").select("specialty_slug,bac_branch,year,score,updated_at").eq("university_id", universityId).order("id").range(from, to));
@@ -193,4 +194,61 @@ export async function getRatesForSpecialties(slugs: string[]): Promise<Specialty
   const rows = await paged<any>((from, to) =>
     sb.from("acceptance_rates").select("university_id,specialty_slug,bac_branch,year,score").in("specialty_slug", slugs).not("score", "is", null).order("id").range(from, to));
   return rows.map((r) => ({ university_id: r.university_id, specialty_slug: r.specialty_slug, bac_branch: r.bac_branch, year: r.year, score: Number(r.score) }));
+}
+
+/** كل أزواج (تخصص، جامعة) النشطة والمنشورة باستعلام مجمّع واحد؛ لـ generateStaticParams. */
+export async function getAllPublishedUniversitySpecialties(): Promise<{ specialty_slug: string; university_slug: string }[]> {
+  const sb = client();
+  if (!sb) return [];
+  const rows = await paged<any>((from, to) =>
+    sb.from("university_specialties").select("specialty_slug,universities!inner(slug)").eq("is_active", true).eq("universities.is_published", true).order("id").range(from, to));
+  return rows
+    .map((r) => ({ specialty_slug: r.specialty_slug as string, university_slug: (Array.isArray(r.universities) ? r.universities[0]?.slug : r.universities?.slug) as string }))
+    .filter((p) => p.specialty_slug && p.university_slug);
+}
+
+// نتائج مُخزَّنة طوال الطلب الواحد: generateMetadata والصفحة يتشاركان البيانات بلا استعلام مكرر
+export const getUniversitiesForSpecialty = cache(load_getUniversitiesForSpecialty);
+export const getUniversityForSpecialty = cache(load_getUniversityForSpecialty);
+export const getAcceptanceRates = cache(load_getAcceptanceRates);
+export const getPublishedUniversities = cache(load_getPublishedUniversities);
+export const getUniversityBySlug = cache(load_getUniversityBySlug);
+export const getUniversitySpecialties = cache(load_getUniversitySpecialties);
+export const getUniversityRates = cache(load_getUniversityRates);
+
+/** معدلات تخصص واحد عبر الجامعات (مخزَّنة للطلب) — تتشاركها generateMetadata والصفحة. */
+export const getRatesForSpecialty = cache(async (slug: string) => getRatesForSpecialties([slug]));
+
+export type SitemapPair = { specialty_slug: string; university_slug: string; lastmod: string | null };
+
+/** للـ sitemap: كل جامعة منشورة مع تاريخ تحديثها. */
+export async function getSitemapUniversities(): Promise<{ slug: string; lastmod: string | null }[]> {
+  const sb = client();
+  if (!sb) return [];
+  const rows = await paged<any>((from, to) => sb.from("universities").select("slug,updated_at").eq("is_published", true).order("slug").range(from, to));
+  return rows.map((r) => ({ slug: r.slug as string, lastmod: (r.updated_at as string | null) ?? null }));
+}
+
+/** للـ sitemap: كل أزواج (تخصص، جامعة) مع آخر تحديث = أحدث updated_at لمعدلات الزوج، وإلا تاريخ إنشاء الربط. */
+export async function getSitemapPairs(): Promise<SitemapPair[]> {
+  const sb = client();
+  if (!sb) return [];
+  const [links, rates] = await Promise.all([
+    paged<any>((from, to) => sb.from("university_specialties").select("university_id,specialty_slug,created_at,universities!inner(slug)").eq("is_active", true).eq("universities.is_published", true).order("id").range(from, to), 100000),
+    paged<any>((from, to) => sb.from("acceptance_rates").select("university_id,specialty_slug,updated_at").order("id").range(from, to), 100000),
+  ]);
+  const latest = new Map<string, string>();
+  for (const r of rates) {
+    if (!r.updated_at) continue;
+    const key = `${r.university_id}|${r.specialty_slug}`;
+    const cur = latest.get(key);
+    if (!cur || r.updated_at > cur) latest.set(key, r.updated_at);
+  }
+  return links
+    .map((l) => ({
+      specialty_slug: l.specialty_slug as string,
+      university_slug: (Array.isArray(l.universities) ? l.universities[0]?.slug : l.universities?.slug) as string,
+      lastmod: latest.get(`${l.university_id}|${l.specialty_slug}`) ?? (l.created_at as string | null) ?? null,
+    }))
+    .filter((p) => p.specialty_slug && p.university_slug);
 }

@@ -2,15 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSpecialty } from "@/lib/data";
-import { getAcceptanceRates, getUniversityForSpecialty } from "@/lib/universities";
-import { fmtScore, freshness, pivotRates, trendOf } from "@/lib/rates";
+import { getAllPublishedUniversitySpecialties, getAcceptanceRates, getUniversityForSpecialty } from "@/lib/universities";
+import { fmtScore, freshness, latestMin, pivotRates, trendOf } from "@/lib/rates";
 import Sparkline from "@/components/Sparkline";
-import { SITE_URL } from "@/lib/constants";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import PrintSheet from "@/components/PrintSheet";
 import ShareActions from "@/components/ShareActions";
 import { AlertTriangle, ArrowRight, BadgeCheck, MapPin } from "lucide-react";
 
-export const revalidate = 900;
+export const revalidate = 600;
+export const dynamicParams = true; // السماح بصفحات جديدة لم تُولَّد وقت البناء
+
+export async function generateStaticParams() {
+  const pairs = await getAllPublishedUniversitySpecialties();
+  return pairs.map((p) => ({ slug: p.specialty_slug, universitySlug: p.university_slug }));
+}
 
 type Props = { params: Promise<{ slug: string; universitySlug: string }> };
 
@@ -20,10 +26,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     getSpecialty(slug), getUniversityForSpecialty(slug, universitySlug),
   ]);
   if (!specialty || !university) return { title: "الصفحة غير موجودة", robots: { index: false } };
+  const rates = await getAcceptanceRates(slug, university.id); // مخزَّنة طوال الطلب: لا تكرار مع الصفحة
+  const m = latestMin(rates);
+  const years = new Set(rates.filter((r) => r.score !== null).map((r) => r.year)).size;
+  const where = university.wilaya ? ` (${university.wilaya})` : "";
+  const title = `معدلات قبول ${specialty.nom_ar} في ${university.name_ar} | ${SITE_NAME}`;
+  const description = m
+    ? `معدلات القبول في ${specialty.nom_ar} بجامعة ${university.name_ar}${where} لآخر ${years} سنوات. أدنى معدل: ${m.score.toFixed(2)} (${m.year}).`
+    : `معدلات القبول في ${specialty.nom_ar} بجامعة ${university.name_ar}${where} حسب شعبة البكالوريا والسنة.`;
+  const url = `${SITE_URL}/specialties/${slug}/${universitySlug}`;
   return {
-    title: `${specialty.nom_ar} في ${university.name_ar} | معدلات القبول`,
-    description: `معدلات القبول التاريخية لتخصص ${specialty.nom_ar} في ${university.name_ar} حسب شعبة البكالوريا والسنة، مع مصادر البيانات المتاحة.`,
-    alternates: { canonical: `/specialties/${slug}/${universitySlug}` },
+    title: { absolute: title },
+    description,
+    alternates: { canonical: url },
+    openGraph: { type: "article", locale: "ar_DZ", siteName: SITE_NAME, title, description, url, images: [{ url: "/og-image.png", width: 1200, height: 630, alt: SITE_NAME }] },
+    twitter: { card: "summary_large_image", title, description, images: ["/og-image.png"] },
   };
 }
 

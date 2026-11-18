@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSpecialties, getSpecialty } from "@/lib/data";
+import { getSpecialties } from "@/lib/data";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
-import { getRatesForSpecialties, getUniversitiesForSpecialty } from "@/lib/universities";
+import { getRatesForSpecialties, getRatesForSpecialty, getUniversitiesForSpecialty, type SpecialtyRate } from "@/lib/universities";
 import { latestMin, latestPerBranch, minByYear } from "@/lib/rates";
 import { autoSpecialtyDescription } from "@/lib/autotext";
 import { similarTo, toIsoDuration } from "@/lib/specialty";
@@ -27,22 +27,25 @@ export async function generateStaticParams() {
   return (await getSpecialties()).map((x) => ({ slug: x.slug }));
 }
 
-const clip = (t: string, n = 155) => (t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t);
-
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const s = await getSpecialty(slug);
+  const s = (await getSpecialties()).find((x) => x.slug === slug); // نفس استدعاء الصفحة (مخزَّن للطلب)
   if (!s) return { title: "التخصص غير موجود", robots: { index: false } };
-  const title = `تخصص ${s.nom_ar} في الجزائر: عتبات القبول والآفاق`;
-  const description = clip(`${s.nom_ar} (${s.nom_fr}) — ${s.diplome}، ${s.duree}. ${s.description_ar}`);
-  const url = `/specialties/${s.slug}`;
+  // نفس استعلامات الصفحة (مخزَّنة طوال الطلب بـ React cache): لا تكرار
+  const [universities, rates] = await Promise.all([getUniversitiesForSpecialty(slug), getRatesForSpecialty(slug)]);
+  const min = latestMin(rates);
+  const title = `${s.nom_ar} — معدلات القبول والجامعات | ${SITE_NAME}`;
+  const description = min
+    ? `اكتشف معدلات القبول في ${s.nom_ar} في ${universities.length} جامعة جزائرية. أدنى معدل: ${min.score.toFixed(2)} (${min.year}) (${min.branch}).${s.filiere.length ? ` الشعب المؤهلة: ${s.filiere.join("، ")}.` : ""}`
+    : `تعرّف على ${s.nom_ar}، الجامعات، والشعب المؤهلة.`;
+  const url = `${SITE_URL}/specialties/${s.slug}`;
   return {
-    title,
+    title: { absolute: title }, // مطلق: القالب العام سيكرر اسم الموقع
     description,
     keywords: [s.nom_ar, s.nom_fr, `تخصص ${s.nom_ar}`, `عتبة ${s.nom_ar}`, "توجيه جامعي الجزائر", ...s.tags].filter(Boolean),
     alternates: { canonical: url },
-    openGraph: { type: "article", locale: "ar_DZ", siteName: SITE_NAME, title, description, url },
-    twitter: { card: "summary", title, description },
+    openGraph: { type: "article", locale: "ar_DZ", siteName: SITE_NAME, title, description, url, images: [{ url: "/og-image.png", width: 1200, height: 630, alt: SITE_NAME }] },
+    twitter: { card: "summary_large_image", title, description, images: ["/og-image.png"] },
   };
 }
 
@@ -54,10 +57,12 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
 
   const similar = similarTo(s, all, 3);
   const compareSpecs = similar.slice(0, 3);
-  const [universities, ratesAll] = await Promise.all([
+  const [universities, ownRates, otherRates] = await Promise.all([
     getUniversitiesForSpecialty(s.slug),
-    getRatesForSpecialties([s.slug, ...compareSpecs.map((x) => x.slug)]),
+    getRatesForSpecialty(s.slug), // مشتركة مع generateMetadata
+    compareSpecs.length ? getRatesForSpecialties(compareSpecs.map((x) => x.slug)) : Promise.resolve([] as SpecialtyRate[]),
   ]);
+  const ratesAll = [...ownRates, ...otherRates];
   const pageUrl = `${SITE_URL}/specialties/${s.slug}`;
 
   // معدلات هذا التخصص عبر الجامعات: للرسم والأسئلة الشائعة والوصف المولَّد

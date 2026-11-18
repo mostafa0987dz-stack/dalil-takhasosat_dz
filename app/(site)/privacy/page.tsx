@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/constants";
 
-export const metadata: Metadata = { title: "سياسة الخصوصية" };
+export const metadata: Metadata = { title: "سياسة الخصوصية", alternates: { canonical: `${SITE_URL}/privacy` } };
 
 export default function Privacy() {
   return (

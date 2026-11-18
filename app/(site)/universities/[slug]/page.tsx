@@ -6,7 +6,7 @@ import { getPublishedUniversities, getUniversityBySlug, getUniversityRates, getU
 import { freshness, latestMin, latestPerBranch } from "@/lib/rates";
 import { autoUniversityDescription } from "@/lib/autotext";
 import { getBacSeries } from "@/lib/series";
-import { SITE_URL } from "@/lib/constants";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import UniversitySpecialties, { type UniSpecialtyView } from "@/components/UniversitySpecialties";
 import ShareActions from "@/components/ShareActions";
 import PrintSheet from "@/components/PrintSheet";
@@ -15,16 +15,31 @@ import EasiestAdmissions from "@/components/EasiestAdmissions";
 import JsonLd from "@/components/JsonLd";
 
 export const revalidate = 600;
+
+export async function generateStaticParams() {
+  const universities = await getPublishedUniversities();
+  return universities.map((u) => ({ slug: u.slug }));
+}
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const u = await getUniversityBySlug(slug);
   if (!u) return {};
+  // نفس استعلامات الصفحة (مخزَّنة طوال الطلب): لا تكرار
+  const [specs, rates] = await Promise.all([getUniversitySpecialties(u.id), getUniversityRates(u.id)]);
+  const n = specs.length;
+  const m = new Set(specs.map((s) => s.domaine)).size;
+  const latest = latestMin(rates);
+  const title = `${u.name_ar} — ${n} تخصصاً ومعدلات القبول | ${SITE_NAME}`;
+  const description = `${u.name_ar}${u.wilaya ? ` (${u.wilaya})` : ""} تُدرّس ${n} تخصصاً في ${m} مجالاً.${latest ? ` أحدث معدل: ${latest.score.toFixed(2)} (${latest.year}).` : ""}`;
+  const url = `${SITE_URL}/universities/${slug}`;
   return {
-    title: `${u.name_ar} — التخصصات ومعدلات القبول`,
-    description: `التخصصات المتوفرة في ${u.name_ar}${u.wilaya ? ` (${u.wilaya})` : ""} ومعدلات القبول حسب شعبة البكالوريا والسنة.`,
-    alternates: { canonical: `/universities/${slug}` },
+    title: { absolute: title },
+    description,
+    alternates: { canonical: url },
+    openGraph: { type: "website", locale: "ar_DZ", siteName: SITE_NAME, title, description, url, images: [{ url: "/og-image.png", width: 1200, height: 630, alt: SITE_NAME }] },
+    twitter: { card: "summary_large_image", title, description, images: ["/og-image.png"] },
   };
 }
 
