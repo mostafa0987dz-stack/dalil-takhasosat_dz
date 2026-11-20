@@ -101,7 +101,7 @@ npm run deploy
 
 ### ملاحظات توافق مهمة
 - تم رفع Next.js إلى إصدار 15.5.29 لأن دليل OpenNext الحالي لم يعد يدعم Next.js 14. يتطلب App Router في Next.js 15 إصدار React 19 كحد أدنى، لذلك أصبح المشروع على `react@^19.2.1` ويستخدم `useActionState` بدل `useFormState` المهمل.
-- `wrangler.jsonc` يحدد Worker باسم `dalil-takhasosat-dz-main`؛ يمكن تغييره قبل أول نشر، ويجب أن يطابق اسم خدمة `WORKER_SELF_REFERENCE`.
+- `wrangler.jsonc` يحدد Worker باسم `dalil-takhasosat-dz`؛ يمكن تغييره قبل أول نشر، ويجب أن يطابق اسم خدمة `WORKER_SELF_REFERENCE`.
 - لا توجد بيانات اعتماد Cloudflare داخل المشروع. يلزم تسجيل الدخول إلى حسابك ثم تنفيذ `npm run deploy` لنشره فعلياً.
 - لم يتم تأكيد بناء Worker أو نشره من هذه البيئة؛ يجب تشغيل `npm install` ثم `npm run preview` أولاً، وبعد نجاح المعاينة تنفيذ `npm run deploy`.
 
