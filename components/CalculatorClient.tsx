@@ -33,7 +33,7 @@ export default function CalculatorClient({ items }: { items: Specialty[] }) {
   const [marks, setMarks] = useState<Record<string, string>>({});
 
   const fields = Object.keys(FORMULAS[serie]);
-  const terms = FORMULAS[serie][field] ?? [];
+  const terms = useMemo(() => FORMULAS[serie][field] ?? [], [serie, field]);
   const avg = useMemo(() => weighted(terms, marks), [terms, marks]);
   const filled = terms.filter((t) => (marks[t.subject] ?? "") !== "").length;
 

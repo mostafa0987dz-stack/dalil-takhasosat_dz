@@ -37,7 +37,7 @@ export default function UniversitySpecialties({ universitySlug, items, branches 
       if (personal && mine) status = admissionStatus(mine.s, average);
       return { i, mine, min, status };
     }).sort((a, b) => (personal ? ORDER[a.status] - ORDER[b.status] : 0) || a.i.nom_ar.localeCompare(b.i.nom_ar, "ar"));
-  }, [items, q, domain, branch, avg, personal, average]);
+  }, [items, q, domain, branch, personal, average]);
 
   const okCount = personal ? rows.filter((r) => r.status === "ok").length : 0;
 

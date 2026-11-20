@@ -61,7 +61,7 @@ export default function BlogPostForm({ post, categories, specialtySlugs, univers
 
       <section className="card grid gap-4 md:grid-cols-2">
         <h2 className="text-lg font-black md:col-span-2">روابط داخلية ذات صلة</h2>
-        <Field label="تخصصات (slug في كل سطر)"><textarea name="related_specialties" rows={3} dir="ltr" list="spec-list" defaultValue={p.related_specialties.join("\n")} className="input" /></Field>
+        <Field label="تخصصات (slug في كل سطر)"><textarea name="related_specialties" rows={3} dir="ltr" defaultValue={p.related_specialties.join("\n")} className="input" /></Field>
         <Field label="جامعات (slug في كل سطر)"><textarea name="related_universities" rows={3} dir="ltr" defaultValue={p.related_universities.join("\n")} className="input" /></Field>
         <p className="text-xs text-slate-500 md:col-span-2">المتاح — تخصصات: {specialtySlugs.slice(0, 40).join("، ") || "لا شيء"} · جامعات: {universitySlugs.slice(0, 30).join("، ") || "لا شيء"}</p>
       </section>
