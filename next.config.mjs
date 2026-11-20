@@ -4,6 +4,7 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: { serverActions: { bodySizeLimit: "30mb" } }, // رفع ZIP حتى 25MB عبر مركز الاستيراد
   async headers() {
     return [{
       source: '/:path*',

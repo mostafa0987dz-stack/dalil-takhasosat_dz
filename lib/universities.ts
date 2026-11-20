@@ -153,7 +153,7 @@ export type AdmissionMatch = {
 };
 
 /** أحدث معدل لكل (جامعة، تخصص) في شعبة معينة، مصنَّفاً حسب معدل الطالب: ok = معدلك ≥ المعدل، near = ينقصك ≤ 1 نقطة. */
-export async function findAdmissions(opts: { branch: string; average: number; wilaya?: string }): Promise<AdmissionMatch[]> {
+export async function findAdmissions(opts: { branch: string; average: number; wilaya?: string; domains?: string[] }): Promise<AdmissionMatch[]> {
   const sb = client();
   if (!sb) return [];
   const rows = await paged<any>((from, to) => {
@@ -168,6 +168,7 @@ export async function findAdmissions(opts: { branch: string; average: number; wi
   }, 10000);
   const latest = new Map<string, any>();
   for (const r of rows) {
+    if (opts.domains?.length && !opts.domains.includes(r.specialties.domaine)) continue;
     const key = `${r.university_id}|${r.specialty_slug}`;
     if (!latest.has(key)) latest.set(key, r);
   }

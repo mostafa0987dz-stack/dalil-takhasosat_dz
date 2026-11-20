@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { findAdmissions, getPublishedUniversities } from "@/lib/universities";
 import { getBacSeries } from "@/lib/series";
+import { getSpecialties } from "@/lib/data";
 import { SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -11,18 +12,20 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/finder` },
 };
 
-type Props = { searchParams: Promise<{ b?: string; s?: string; w?: string }> };
+type Props = { searchParams: Promise<{ b?: string; s?: string; w?: string; d?: string }> };
 const MAX_ROWS = 150;
 
 export default async function FinderPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const [series, universities] = await Promise.all([getBacSeries(), getPublishedUniversities()]);
+  const [series, universities, specialties] = await Promise.all([getBacSeries(), getPublishedUniversities(), getSpecialties()]);
+  const allDomains = new Set(specialties.map((s) => s.domaine));
+  const domains = (sp.d ?? "").split(",").map((x) => x.trim()).filter((x) => allDomains.has(x));
   const wilayas = Array.from(new Set(universities.map((u) => u.wilaya).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "ar"));
   const branch = series.some((s) => s.name_ar === sp.b) ? (sp.b as string) : "";
   const average = Number((sp.s ?? "").replace(",", "."));
   const valid = Boolean(branch) && (sp.s ?? "").trim() !== "" && Number.isFinite(average) && average >= 0 && average <= 20;
   const wilaya = wilayas.includes(sp.w ?? "") ? (sp.w as string) : "";
-  const results = valid ? await findAdmissions({ branch, average, wilaya: wilaya || undefined }) : [];
+  const results = valid ? await findAdmissions({ branch, average, wilaya: wilaya || undefined, domains }) : [];
   const ok = results.filter((r) => r.status === "ok");
   const near = results.filter((r) => r.status === "near");
 
@@ -57,6 +60,7 @@ export default async function FinderPage({ searchParams }: Props) {
         <label className="text-sm font-bold">الولاية (اختياري)
           <select name="w" defaultValue={wilaya} className="input mt-1"><option value="">كل الولايات</option>{wilayas.map((w) => <option key={w} value={w}>{w}</option>)}</select>
         </label>
+        {domains.length > 0 && <input type="hidden" name="d" value={domains.join(",")} />}
         <button className="btn-primary"><Search size={16} aria-hidden />أظهر النتائج</button>
       </form>
 
@@ -65,7 +69,7 @@ export default async function FinderPage({ searchParams }: Props) {
       {valid && (
         <div className="space-y-10" aria-live="polite">
           <p className="rounded-2xl bg-blue-50 p-4 text-sm leading-7 text-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
-            شعبة «{branch}» بمعدل <b>{average.toFixed(2)}</b>{wilaya ? ` في ولاية ${wilaya}` : ""}: <b>{ok.length}</b> نتيجة يكفيك فيها المعدل و<b>{near.length}</b> قريبة (ينقصك نقطة أو أقل). المعدلات تتغير كل سنة، فاعتمدها كمؤشر وراجع المنشور الرسمي.
+            شعبة «{branch}» بمعدل <b>{average.toFixed(2)}</b>{wilaya ? ` في ولاية ${wilaya}` : ""}{domains.length ? ` (المجالات: ${domains.join("، ")})` : ""}: <b>{ok.length}</b> نتيجة يكفيك فيها المعدل و<b>{near.length}</b> قريبة (ينقصك نقطة أو أقل). المعدلات تتغير كل سنة، فاعتمدها كمؤشر وراجع المنشور الرسمي.
           </p>
           <div>
             <h2 className="mb-3 text-xl font-black">معدلك يكفي ({ok.length})</h2>

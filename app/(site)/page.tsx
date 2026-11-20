@@ -9,6 +9,9 @@ import HeroSearch from "@/components/HeroSearch";
 import DomainIcon from "@/components/DomainIcon";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import AdSlot from "@/components/AdSlot";
+import PostCard from "@/components/blog/PostCard";
+import { getBlogCategories, getPublishedPosts } from "@/lib/blog";
+import { getPublishedUniversities } from "@/lib/universities";
 import { messages, type Locale } from "@/lib/i18n";
 import { SITE_URL } from "@/lib/constants";
 
@@ -27,7 +30,9 @@ export default async function Home() {
     { t: L("الجامعات", "Universités", "Universities"), d: L("تصفح الجامعات والتخصصات المتوفرة في كل منها ومعدلات القبول.", "Parcourez les universités, leurs spécialités et leurs seuils d’admission.", "Browse universities, their majors and admission scores."), u: "/universities", Icon: Building2 },
     { t: L("أين أقبل؟", "Où être admis ?", "Where can I get in?"), d: L("أدخل شعبتك ومعدلك لتعرف التخصصات والجامعات المناسبة.", "Saisissez votre filière et moyenne pour voir où vous pouvez être admis.", "Enter your stream and average to see where you can get in."), u: "/finder", Icon: Search },
   ];
-  const [data, series] = await Promise.all([getSpecialties(), getBacSeries()]);
+  const [data, series, latestPosts, blogCategories, allUniversities] = await Promise.all([getSpecialties(), getBacSeries(), getPublishedPosts(3), getBlogCategories(), getPublishedUniversities()]);
+  const featuredUniversities = [...allUniversities].sort((a, b) => b.specialties_count - a.specialties_count).slice(0, 6); // الأكثر تخصصات في قاعدة البيانات
+  const catById = new Map(blogCategories.map((c) => [c.id, c]));
   const domains = Array.from(new Set(data.map((x) => x.domaine)));
   const stats = [
     { n: data.length, l: t.statsSpecialties },
@@ -110,6 +115,33 @@ export default async function Home() {
           {domains.map((d) => <Link key={d} href={`/specialties?d=${encodeURIComponent(d)}`} prefetch={false} className="chip gap-2"><DomainIcon domaine={d} size={15} />{d}</Link>)}
         </div>
       </section>
+
+      {latestPosts.length > 0 && (
+        <section className="container-page pb-10" aria-labelledby="latest-posts">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <h2 id="latest-posts" className="section-title">أحدث المقالات</h2>
+            <Link href="/blog" prefetch={false} className="text-sm font-bold text-blue-600">كل المقالات ←</Link>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{latestPosts.map((p) => <PostCard key={p.id} post={p} category={p.category_id ? catById.get(p.category_id) : null} />)}</div>
+        </section>
+      )}
+
+      {featuredUniversities.length > 0 && (
+        <section className="container-page pb-10" aria-labelledby="featured-unis">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <h2 id="featured-unis" className="section-title">جامعات مميزة</h2>
+            <Link href="/universities" prefetch={false} className="text-sm font-bold text-blue-600">كل الجامعات ←</Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredUniversities.map((u) => (
+              <Link key={u.id} href={`/universities/${u.slug}`} prefetch={false} className="card card-hover flex items-start justify-between gap-3">
+                <span className="min-w-0"><b className="block">{u.name_ar}</b><span className="mt-1 block text-sm text-slate-500">{[u.type, u.wilaya].filter(Boolean).join(" · ") || "—"}</span></span>
+                <span className="shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-200">{u.specialties_count} تخصص</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="container-page pb-16">
         <div className="mb-7 flex items-center justify-between">

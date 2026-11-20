@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Calculator, GraduationCap, Home, Search } from "lucide-react";
+import { BookOpen, Building2, Compass, GraduationCap, Home } from "lucide-react";
 
 const items = [
   { href: "/", Icon: Home, label: "الرئيسية" },
-  { href: "/specialties", Icon: GraduationCap, label: "التخصصات" },
   { href: "/universities", Icon: Building2, label: "الجامعات" },
-  { href: "/finder", Icon: Search, label: "أين أقبل؟" },
-  { href: "/calculator", Icon: Calculator, label: "الحاسبة" },
+  { href: "/specialties", Icon: GraduationCap, label: "التخصصات" },
+  { href: "/discover", Icon: Compass, label: "اكتشف" },
+  { href: "/blog", Icon: BookOpen, label: "المدونة" },
 ] as const;
 
 /** شريط تنقل سفلي للهاتف فقط (يختفي من 1024px فما فوق ومن الطباعة). */

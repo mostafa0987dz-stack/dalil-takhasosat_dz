@@ -7,13 +7,14 @@ import { useFavorites } from "@/lib/useFavorites";
 
 const links = [
   ["الرئيسية", "/"],
-  ["التخصصات", "/specialties"],
-  ["الشعب", "/bac"],
-  ["حاسبة المعدل", "/calculator"],
+  ["المدونة", "/blog"],
   ["الجامعات", "/universities"],
-  ["أين أقبل؟", "/finder"],
-  ["عتبات القبول", "/seuils"],
-  ["مقارنة", "/compare"],
+  ["التخصصات", "/specialties"],
+  ["اكتشف تخصصك", "/discover"],
+  ["حاسبة المعدل", "/calculator"],
+  ["مقارنة التخصصات", "/compare"],
+  ["المفضلة", "/favorites"],
+  ["من نحن", "/about"],
 ] as const;
 
 export default function Header() {

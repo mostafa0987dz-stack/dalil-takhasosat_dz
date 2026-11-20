@@ -15,6 +15,7 @@ import SpecialtyTabs from "@/components/SpecialtyTabs";
 import PrintSheet from "@/components/PrintSheet";
 import UniversityCards from "@/components/UniversityCards";
 import MiniTrendChart from "@/components/MiniTrendChart";
+import YearlyMinTable from "@/components/YearlyMinTable";
 import ScoreWidget, { type ScoreItem } from "@/components/ScoreWidget";
 import SpecialtyFaq, { type FaqItem } from "@/components/SpecialtyFaq";
 import SpecialtyCompareTable, { type CompareCol } from "@/components/SpecialtyCompareTable";
@@ -160,6 +161,7 @@ export default async function SpecialtyDetails({ params }: { params: Promise<{ s
         <section>
           <p className="mb-4 max-w-3xl leading-8 text-slate-600 dark:text-slate-400">معدلات القبول مرتبطة بالجامعة وشعبة البكالوريا والسنة. اختر الجامعة لعرض جدول المعدلات ومصادره.</p>
           {Object.keys(trendByBranch).length > 0 && <MiniTrendChart byBranch={trendByBranch} defaultBranch="علوم تجريبية" />}
+          <YearlyMinTable rates={rates} />
           <ScoreWidget scope="specialty" items={widgetItems} branches={widgetBranches} />
           {universities.length ? (
             <UniversityCards items={universities} specialtySlug={s.slug} />

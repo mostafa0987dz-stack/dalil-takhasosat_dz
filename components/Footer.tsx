@@ -1,94 +1,50 @@
 import Link from "next/link";
-import { Facebook, Instagram, Twitter, Send, Mail, Phone } from "lucide-react";
+import { Facebook, Instagram, Mail, MapPin, Phone, Send, Twitter, Youtube } from "lucide-react";
+import { SITE_NAME } from "@/lib/constants";
+import { getFooterSettings, SOCIAL_LABELS, type FooterSettings } from "@/lib/footer";
 
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
-const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE;
-const SOCIALS = [
-  { label: "Facebook", href: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK, Icon: Facebook, hover: "hover:bg-blue-600" },
-  { label: "Instagram", href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM, Icon: Instagram, hover: "hover:bg-pink-600" },
-  { label: "Telegram", href: process.env.NEXT_PUBLIC_SOCIAL_TELEGRAM, Icon: Send, hover: "hover:bg-sky-500" },
-  { label: "Twitter", href: process.env.NEXT_PUBLIC_SOCIAL_TWITTER, Icon: Twitter, hover: "hover:bg-slate-900" },
-].flatMap(({ href, ...rest }) => (href ? [{ ...rest, href }] : []));
+const ICONS: Record<keyof FooterSettings["social"], typeof Facebook> = { facebook: Facebook, instagram: Instagram, telegram: Send, twitter: Twitter, youtube: Youtube };
 
-export default function Footer() {
-  const copy = { intro:"مرجعك الأول لاكتشاف التخصصات الجامعية الجزائرية، مقارنة العتبات، وحساب معدلك الموزون بكل سهولة.", quick:"روابط سريعة", contact:"تواصل معنا", follow:"تابعنا", home:"الرئيسية", all:"جميع التخصصات", calc:"حاسبة المعدل", seuil:"عتبات القبول", compare:"مقارنة التخصصات", about:"عن الدليل", privacy:"الخصوصية", note:"البيانات إرشادية؛ المرجع النهائي هو منشور وزارة التعليم العالي." };
+export default async function Footer() {
+  const f = await getFooterSettings();
+  const social = (Object.keys(f.social) as (keyof FooterSettings["social"])[]).filter((k) => f.social[k]);
+  const hasContact = Boolean(f.contact.email || f.contact.phone || f.contact.address || social.length);
+  const sections = [f.show.about, f.show.quick, f.show.help, f.show.contact && hasContact].filter(Boolean).length;
+  const linkCls = "inline-flex min-h-8 items-center text-slate-600 hover:text-blue-600 dark:text-slate-400";
+  const list = (items: { label: string; href: string }[]) => (
+    <ul className="space-y-1.5 text-sm">
+      {items.map((l) => <li key={`${l.label}-${l.href}`}>{/^https?:/i.test(l.href) ? <a href={l.href} target="_blank" rel="noopener noreferrer" className={linkCls}>{l.label}</a> : <Link href={l.href} prefetch={false} className={linkCls}>{l.label}</Link>}</li>)}
+    </ul>
+  );
   return (
-    <footer className="no-print mt-20 border-t border-white/60 bg-white/50 py-12 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/50">
-      <div className="container-page">
-        {/* القسم العلوي: 4 أعمدة */}
-        <div className="grid gap-8 md:grid-cols-4">
-          
-          {/* 1. معلومات الموقع */}
-          <div className="md:col-span-1">
-            <h3 className="mb-4 text-xl font-extrabold text-slate-900 dark:text-white">
-              دليل التخصصات
-            </h3>
-            <p className="text-sm leading-7 text-slate-600 dark:text-slate-400">
-              {copy.intro}
-            </p>
-          </div>
-
-          {/* 2. روابط سريعة */}
-          <div>
-            <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.quick}</h4>
-            <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-              <li><Link href="/" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.home}</Link></li>
-              <li><Link href="/specialties" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.all}</Link></li>
-              <li><Link href="/calculator" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.calc}</Link></li>
-              <li><Link href="/seuils" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.seuil}</Link></li>
-              <li><Link href="/compare" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.compare}</Link></li>
+    <footer className="mt-20 border-t border-slate-200/70 bg-white/60 dark:border-slate-800 dark:bg-slate-950/60">
+      <div className={`container-page grid gap-10 py-12 sm:grid-cols-2 ${sections >= 4 ? "lg:grid-cols-4" : sections === 3 ? "lg:grid-cols-3" : ""}`}>
+        {f.show.about && (
+          <section aria-labelledby="ft-about">
+            <h2 id="ft-about" className="mb-3 text-lg font-black text-brand-700 dark:text-blue-400">{SITE_NAME}</h2>
+            <p className="text-sm leading-8 text-slate-600 dark:text-slate-400">{f.about.description}</p>
+          </section>
+        )}
+        {f.show.quick && f.quick.length > 0 && <nav aria-labelledby="ft-quick"><h2 id="ft-quick" className="mb-3 font-black">روابط مهمة</h2>{list(f.quick)}</nav>}
+        {f.show.help && f.help.length > 0 && <nav aria-labelledby="ft-help"><h2 id="ft-help" className="mb-3 font-black">المساعدة</h2>{list(f.help)}</nav>}
+        {f.show.contact && hasContact && (
+          <section aria-labelledby="ft-contact">
+            <h2 id="ft-contact" className="mb-3 font-black">التواصل</h2>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+              {f.contact.email && <li className="flex items-center gap-2"><Mail size={15} aria-hidden /><a dir="ltr" href={`mailto:${f.contact.email}`} className="hover:text-blue-600">{f.contact.email}</a></li>}
+              {f.contact.phone && <li className="flex items-center gap-2"><Phone size={15} aria-hidden /><a dir="ltr" href={`tel:${f.contact.phone.replace(/\s/g, "")}`} className="hover:text-blue-600">{f.contact.phone}</a></li>}
+              {f.contact.address && <li className="flex items-center gap-2"><MapPin size={15} aria-hidden />{f.contact.address}</li>}
             </ul>
-          </div>
-
-          {/* 3. معلومات التواصل (تظهر فقط عند ضبطها في متغيرات البيئة) */}
-          {(CONTACT_EMAIL || CONTACT_PHONE) && (
-            <div>
-              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.contact}</h4>
-              <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-                {CONTACT_EMAIL && (
-                  <li className="flex items-center gap-2">
-                    <Mail size={16} className="text-blue-600 dark:text-blue-400" />
-                    <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{CONTACT_EMAIL}</a>
-                  </li>
-                )}
-                {CONTACT_PHONE && (
-                  <li className="flex items-center gap-2">
-                    <Phone size={16} className="text-blue-600 dark:text-blue-400" />
-                    <a href={`tel:${CONTACT_PHONE.replace(/[^+\d]/g, "")}`} className="transition-colors hover:text-blue-600 dark:hover:text-blue-400" dir="ltr">{CONTACT_PHONE}</a>
-                  </li>
-                )}
+            {social.length > 0 && (
+              <ul className="mt-4 flex flex-wrap gap-2" aria-label="روابط التواصل الاجتماعي">
+                {social.map((k) => { const Icon = ICONS[k]; return <li key={k}><a href={f.social[k]} target="_blank" rel="noopener noreferrer" aria-label={SOCIAL_LABELS[k]} className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200/70 hover:bg-white dark:border-slate-700/70 dark:hover:bg-slate-800"><Icon size={18} aria-hidden /></a></li>; })}
               </ul>
-            </div>
-          )}
-
-          {/* 4. التواصل الاجتماعي (روابط حقيقية فقط) */}
-          {SOCIALS.length > 0 && (
-            <div>
-              <h4 className="mb-4 font-bold text-slate-900 dark:text-white">{copy.follow}</h4>
-              <div className="flex gap-3">
-                {SOCIALS.map(({ label, href, Icon, hover }) => (
-                  <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer" className={`flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:-translate-y-1 hover:text-white dark:bg-slate-800 dark:text-slate-300 ${hover}`}>
-                    <Icon size={18} />
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* القسم السفلي: الحقوق والملاحظات */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-6 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-500 md:flex-row">
-          <p>© {new Date().getFullYear()} دليل التخصصات الجامعية الجزائرية. جميع الحقوق محفوظة.</p>
-          
-          <div className="flex gap-5">
-            <Link href="/about" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.about}</Link>
-            <Link href="/privacy" className="transition-colors hover:text-blue-600 dark:hover:text-blue-400">{copy.privacy}</Link>
-          </div>
-          
-          <p className="text-center md:text-left">
-            {copy.note}
-          </p>
-        </div>
+            )}
+          </section>
+        )}
+      </div>
+      <div className="border-t border-slate-200/70 py-5 text-center text-xs text-slate-500 dark:border-slate-800">
+        {f.copyright || `© ${new Date().getFullYear()} ${SITE_NAME}. جميع الحقوق محفوظة.`}
       </div>
     </footer>
   );
